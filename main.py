@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # 👇 INSERT YOUR PRINTFUL TOKEN HERE
-PRINTFUL_TOKEN = "pk-7uN9Z5mKhDrpFooAXDbwgSKbHSw5GsWb55wA18VH"  # ← your real token
+PRINTFUL_TOKEN = "pk-ADD API HERE"  # ← your real token
 
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
