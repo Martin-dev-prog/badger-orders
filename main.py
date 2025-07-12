@@ -5,7 +5,12 @@ import os
 app = Flask(__name__)
 
 # 👇 INSERT YOUR PRINTFUL TOKEN HERE
-PRINTFUL_TOKEN = "pk-ADD API HERE"  # ← Replace with your actual Printful API key
+PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
+
+# ✅ HOME PAGE ROUTE to prevent 404
+@app.route("/", methods=["GET"])
+def home():
+    return "✅ Badger Orders API is running. Use POST /submit-order"
 
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
@@ -20,7 +25,7 @@ def submit_order():
         },
         "items": [
             {
-                "variant_id": 4012,  # Replace with your actual product variant ID from Printful
+                "variant_id": 4012,  # Replace with your real Printful variant ID
                 "quantity": int(data.get("quantity", 1))
             }
         ]
@@ -34,8 +39,7 @@ def submit_order():
     response = requests.post("https://api.printful.com/orders", headers=headers, json=order_payload)
     return jsonify(response.json())
 
-# 🔥 THIS PART IS REQUIRED FOR DEPLOYMENT
+# 🔥 Needed for Render to work
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
