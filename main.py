@@ -10,7 +10,7 @@ PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
 # ✅ HOME PAGE ROUTE
 @app.route("/", methods=["GET"])
 def home():
-    return "✅ Badger Orders API is running. Use POST /submit-order or GET /test-api or /get-products"
+    return "✅ Badger Orders API is running. Use POST /submit-order or GET /test-api or /get-products or /get-variants"
 
 # ✅ TEST API ROUTE
 @app.route("/test-api", methods=["GET"])
@@ -46,6 +46,47 @@ def get_products():
         output.append({"name": name, "id": product_id})
 
     return jsonify(output)
+
+# ✅ GET VARIANTS ROUTE
+@app.route("/get-variants", methods=["GET"])
+def get_variants():
+    headers = {
+        "Authorization": f"Bearer {PRINTFUL_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # Step 1: Get all products
+    products_resp = requests.get("https://api.printful.com/store/products", headers=headers)
+    if products_resp.status_code != 200:
+        return jsonify({"error": "Failed to fetch products", "status": products_resp.status_code})
+
+    result = []
+
+    for product in products_resp.json().get("result", []):
+        product_id = product.get("id")
+        product_name = product.get("name")
+
+        # Step 2: Get variants for each product
+        variant_resp = requests.get(f"https://api.printful.com/store/products/{product_id}", headers=headers)
+        if variant_resp.status_code != 200:
+            continue
+
+        variants = variant_resp.json().get("result", {}).get("variants", [])
+        simplified_variants = [
+            {
+                "variant_id": v["id"],
+                "name": v["name"]
+            }
+            for v in variants
+        ]
+
+        result.append({
+            "product_id": product_id,
+            "name": product_name,
+            "variants": simplified_variants
+        })
+
+    return jsonify(result)
 
 # ✅ ORDER SUBMISSION ROUTE
 @app.route("/submit-order", methods=["POST"])
