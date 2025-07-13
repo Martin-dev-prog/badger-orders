@@ -10,7 +10,7 @@ PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
 # ✅ HOME PAGE ROUTE
 @app.route("/", methods=["GET"])
 def home():
-    return "✅ Badger Orders API is running. Use POST /submit-order"
+    return "✅ Badger Orders API is running. Use POST /submit-order or GET /test-api or /get-products"
 
 # ✅ TEST API ROUTE
 @app.route("/test-api", methods=["GET"])
@@ -24,6 +24,28 @@ def test_api():
         "status": response.status_code,
         "response": response.json()
     })
+
+# ✅ GET PRODUCTS ROUTE
+@app.route("/get-products", methods=["GET"])
+def get_products():
+    headers = {
+        "Authorization": f"Bearer {PRINTFUL_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get("https://api.printful.com/store/products", headers=headers)
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to retrieve products", "status": response.status_code})
+
+    products = response.json().get("result", [])
+    output = []
+
+    for product in products:
+        name = product.get("name", "Unnamed")
+        product_id = product.get("id", "Unknown")
+        output.append({"name": name, "id": product_id})
+
+    return jsonify(output)
 
 # ✅ ORDER SUBMISSION ROUTE
 @app.route("/submit-order", methods=["POST"])
