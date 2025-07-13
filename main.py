@@ -25,6 +25,8 @@ def test_api():
         "status": response.status_code,
         "response": response.json()
     })
+    print(response.status_code)
+    print(response.json())
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
