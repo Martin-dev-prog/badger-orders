@@ -11,7 +11,20 @@ PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
 @app.route("/", methods=["GET"])
 def home():
     return "✅ Badger Orders API is running. Use POST /submit-order"
+@app.route("/test-api", methods=["GET"])
+def test_api():
+    import requests
 
+    headers = {
+        "Authorization": f"Bearer {PRINTFUL_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get("https://api.printful.com/store/products", headers=headers)
+    return jsonify({
+        "status": response.status_code,
+        "response": response.json()
+    })
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
