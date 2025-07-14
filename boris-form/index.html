@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title id="pageTitle">Order – Badgers of Bunger Hill</title>
+  <meta charset="UTF-8">
+  <title>Order – Badgers of Bunger Hill</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,7 +38,70 @@
 
   <img id="productImage" src="" alt="Product Image" />
   <h2 id="productName">Loading...</h2>
-  <p id="productPrice"><strong>Price:</strong> Loading...</p>
+  <p><strong>Price:</strong> <span id="productPrice">£19.95</span> (includes VAT, excludes shipping)</p>
 
   <form id="orderForm">
-    <input type="
+    <input type="text" id="name" placeholder="Your Name" required />
+    <input type="email" id="email" placeholder="Your Email" required />
+    <textarea id="address" placeholder="Shipping Address" required></textarea>
+    <input type="text" id="city" placeholder="City" required />
+
+    <select id="size" required>
+      <option value="">Select Size</option>
+    </select>
+
+    <select id="quantity" required>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+
+    <button type="submit">Buy this product</button>
+  </form>
+
+  <div id="result"></div>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
+
+  if (!productId) {
+    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID found");
+  }
+
+  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+    .then(res => res.json())
+    .then(data => {
+      const product = data.result?.sync_product;
+      const variants = data.result?.sync_variants;
+
+      if (!product || !variants || variants.length === 0) {
+        document.getElementById("result").innerText = "Product not found.";
+        return;
+      }
+
+      // Set product image and name
+      document.getElementById("productImage").src = product.thumbnail_url;
+      document.getElementById("productName").innerText = product.name;
+
+      // Set price (from first variant)
+      document.getElementById("productPrice").innerText = `£${variants[0].retail_price}`;
+
+      // Populate size dropdown from variants
+      const sizeSelect = document.getElementById("size");
+      variants.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.size || v.name;
+        opt.textContent = v.size || v.name;
+        sizeSelect.appendChild(opt);
+      });
+
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "Failed to load product: " + err.message;
+    });
+</script>
+
+</body>
+</html>
