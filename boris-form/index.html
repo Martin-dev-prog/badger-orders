@@ -1,36 +1,44 @@
-const urlParams = new URLSearchParams(window.location.search);
-const productId = urlParams.get('id');
-
-if (!productId) {
-  document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
-  throw new Error("No product ID found");
-}
-
-fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-  .then(res => res.json())
-  .then(data => {
-    const inner = data.result?.result;
-    const product = inner?.sync_product;
-    const variants = inner?.sync_variants;
-
-    if (!product || !variants) {
-      document.getElementById("result").innerText = "Product not found.";
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title id="pageTitle">Order – Badgers of Bunger Hill</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
+      text-align: center;
     }
+    form {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    img {
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
 
-    document.getElementById("productImage").src = product.thumbnail_url;
-    document.getElementById("productName").innerText = product.name;
+  <img id="productImage" src="" alt="Product Image" />
+  <h2 id="productName">Loading...</h2>
+  <p id="productPrice"><strong>Price:</strong> Loading...</p>
 
-    document.getElementById("productPrice").innerText = "£" + variants[0].retail_price + " (includes VAT, excludes shipping)";
-
-    const sizeDropdown = document.getElementById("size");
-    variants.forEach(variant => {
-      const option = document.createElement("option");
-      option.value = variant.variant_id;
-      option.textContent = variant.size || variant.name;
-      sizeDropdown.appendChild(option);
-    });
-  })
-  .catch(err => {
-    document.getElementById("result").innerText = "Failed to load product: " + err.message;
-  });
+  <form id="orderForm">
+    <input type="
