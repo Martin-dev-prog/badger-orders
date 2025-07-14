@@ -6,7 +6,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# Load Printful API key
+# ✅ Load Printful API key from environment
 PRINTFUL_TOKEN = os.getenv("PRINTFUL_API_KEY")
 if not PRINTFUL_TOKEN:
     raise ValueError("Missing PRINTFUL_API_KEY environment variable")
@@ -15,64 +15,51 @@ headers = {
     "Authorization": f"Bearer {PRINTFUL_TOKEN}"
 }
 
-# ✅ Test endpoint
+# ✅ Test route
+@app.route("/")
+def root():
+    return jsonify({"message": "Flask is working and CORS is enabled."})
+
+# ✅ Test Printful API connection
 @app.route("/test-api")
 def test_api():
-    return {
-        "status": "✅ Flask API is live",
-        "token_prefix": PRINTFUL_TOKEN[:6] + "..." if PRINTFUL_TOKEN else "Not found"
-    }
-
-# ✅ Get ALL product IDs
-@app.route("/get-product-ids")
-def get_product_ids():
     url = "https://api.printful.com/store/products"
-    response = requests.get(url, headers=headers)
-
-    if response.status_code != 200:
-        return {"error": f"Failed to fetch products: {response.text}"}, response.status_code
-
-    data = response.json().get("result", [])
-    simplified = [
-        {
-            "id": item["id"],
-            "name": item["name"],
-            "thumbnail": item.get("thumbnail_url", "")
-        }
-        for item in data
-    ]
-    return jsonify({"products": simplified})
+    r = requests.get(url, headers=headers)
+    return jsonify({
+        "status_code": r.status_code,
+        "result": r.json() if r.status_code == 200 else r.text
+    })
 
 # ✅ Get product details by ID
 @app.route("/get-product-details/<int:product_id>")
 def get_product_details(product_id):
     url = f"https://api.printful.com/store/products/{product_id}"
     r = requests.get(url, headers=headers)
-    try:
-        return {"result": r.json()}
-    except:
-        return {"error": "Could not parse response", "raw": r.text}, 500
+    return jsonify({
+        "status_code": r.status_code,
+        "result": r.json() if r.status_code == 200 else r.text
+    })
 
-# ✅ Submit order
-@app.route("/submit-order", methods=["POST"])
-def submit_order():
-    data = request.form
+# ✅ Get all product IDs (driver route you mentioned)
+@app.route("/get-product-ids")
+def get_product_ids():
+    url = "https://api.printful.com/store/products"
+    r = requests.get(url, headers=headers)
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to fetch product list", "status_code": r.status_code})
+    products = r.json().get("result", [])
+    ids = [{"id": p["id"], "name": p["name"]} for p in products]
+    return jsonify(ids)
 
-    payload = {
-        "recipient": {
-            "name": data.get("name"),
-            "email": data.get("email"),
-            "address1": data.get("address"),
-            "city": data.get("city"),
-            "country_code": "GB"
-        },
-        "items": [
-            {
-                "variant_id": int(data.get("variant_id")),
-                "quantity": int(data.get("quantity", 1))
-            }
-        ]
-    }
+# ✅ Debug env
+@app.route("/debug-env")
+def debug_env():
+    return jsonify({
+        "token_found": bool(PRINTFUL_TOKEN),
+        "starts_with": PRINTFUL_TOKEN[:8] + "..." if PRINTFUL_TOKEN else "None",
+        "length": len(PRINTFUL_TOKEN) if PRINTFUL_TOKEN else 0
+    })
 
-    response = requests.post("https://api.printful.com/orders", json=payload, headers=headers)
-    return response.json(), response.status_code
+# ✅ Required to run Flask on Render
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
