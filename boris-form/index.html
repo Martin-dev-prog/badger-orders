@@ -1,107 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Order – Badgers of Bunger Hill</title>
+  <meta charset="UTF-8" />
+  <title>Product Details</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f8f8f8;
-      padding: 40px;
       text-align: center;
+      background: #f0f0f0;
+      padding: 30px;
     }
-    form {
-      display: inline-block;
-      padding: 20px;
+    .product-card {
       background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 400px;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: auto;
     }
     img {
       width: 300px;
       margin-bottom: 20px;
     }
-    #result {
-      margin-top: 20px;
+    #error {
+      color: red;
       font-weight: bold;
-      color: green;
     }
   </style>
 </head>
 <body>
 
-  <img id="productImage" src="" alt="Product Image" />
-  <h2 id="productName">Loading...</h2>
-  <p><strong>Price:</strong> <span id="productPrice">£19.95</span> (includes VAT, excludes shipping)</p>
+  <div class="product-card">
+    <img id="productImage" src="" alt="Product Image" />
+    <h2 id="productName">Loading...</h2>
+    <p id="productPrice"><strong>Price:</strong> Loading...</p>
+    <div id="error"></div>
+  </div>
 
-  <form id="orderForm">
-    <input type="text" id="name" placeholder="Your Name" required />
-    <input type="email" id="email" placeholder="Your Email" required />
-    <textarea id="address" placeholder="Shipping Address" required></textarea>
-    <input type="text" id="city" placeholder="City" required />
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("id");
 
-    <select id="size" required>
-      <option value="">Select Size</option>
-    </select>
+    if (!productId) {
+      document.getElementById("error").innerText = "❌ No product ID found in URL.";
+      throw new Error("No product ID.");
+    }
 
-    <select id="quantity" required>
-      <option value="1" selected>1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-    </select>
+    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+      .then(res => res.json())
+      .then(data => {
+        const result = data.result;
+        if (!result || !result.sync_product) {
+          document.getElementById("error").innerText = "❌ Product not found.";
+          return;
+        }
 
-    <button type="submit">Buy this product</button>
-  </form>
+        const product = result.sync_product;
+        const variant = result.sync_variants?.[0]; // First variant
+        const image = variant?.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url;
 
-  <div id="result"></div>
-
-<script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
-
-  if (!productId) {
-    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
-    throw new Error("No product ID found");
-  }
-
-  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => res.json())
-    .then(data => {
-      const product = data.result?.sync_product;
-      const variants = data.result?.sync_variants;
-
-      if (!product || !variants || variants.length === 0) {
-        document.getElementById("result").innerText = "Product not found.";
-        return;
-      }
-
-      // Set product image and name
-      document.getElementById("productImage").src = product.thumbnail_url;
-      document.getElementById("productName").innerText = product.name;
-
-      // Set price (from first variant)
-      document.getElementById("productPrice").innerText = `£${variants[0].retail_price}`;
-
-      // Populate size dropdown from variants
-      const sizeSelect = document.getElementById("size");
-      variants.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v.size || v.name;
-        opt.textContent = v.size || v.name;
-        sizeSelect.appendChild(opt);
+        document.getElementById("productImage").src = image;
+        document.getElementById("productName").innerText = product.name;
+        document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${variant?.retail_price || '?.??'}`;
+      })
+      .catch(err => {
+        document.getElementById("error").innerText = "❌ Error loading product: " + err.message;
       });
-
-    })
-    .catch(err => {
-      document.getElementById("result").innerText = "Failed to load product: " + err.message;
-    });
-</script>
+  </script>
 
 </body>
 </html>
