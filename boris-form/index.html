@@ -67,35 +67,38 @@
   const productId = urlParams.get('id');
 
   if (!productId) {
-    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
-    throw new Error("No product ID found");
+    document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID in URL");
   }
 
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
     .then(res => res.json())
-    .then(apiData => {
-      const deepResult = apiData?.result?.result || apiData?.result;
+    .then(data => {
+      const result = data?.result?.result || data?.result;
 
-      if (deepResult && deepResult.sync_product) {
-        const product = deepResult.sync_product;
-        const variant = deepResult.sync_variants?.[0];
-
-        const imageUrl =
-          product.thumbnail_url ||
-          variant?.files?.find(f => f.type === "preview")?.preview_url ||
-          "";
-
-        document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productName").innerText = product.name || "Unnamed Product";
-        document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
-      } else {
-        document.getElementById("result").innerText = "Product not found.";
+      if (!result || !result.sync_product) {
+        document.getElementById("result").innerText = "❌ Product not found.";
+        return;
       }
+
+      const product = result.sync_product;
+      const variant = result.sync_variants?.[0];
+
+      // Image: try thumbnail, fallback to variant image
+      const imageUrl =
+        product.thumbnail_url ||
+        variant?.files?.find(f => f.type === "preview")?.preview_url ||
+        "";
+
+      document.getElementById("productImage").src = imageUrl || "";
+      document.getElementById("productName").innerText = product.name || "Unnamed Product";
+      document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
     })
     .catch(err => {
-      document.getElementById("result").innerText = "Failed to load product: " + err.message;
+      document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
     });
 </script>
+
 
 
 </body>
