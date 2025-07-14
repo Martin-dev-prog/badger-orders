@@ -1,6 +1,9 @@
-import requests
-from flask import Flask, request, jsonify
 import os
+import requests
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
 
 app = Flask(__name__)
 
