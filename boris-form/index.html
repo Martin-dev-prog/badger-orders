@@ -1,69 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Test Product – Badgers of Bunger Hill</title>
+  <meta charset="UTF-8" />
+  <title>Order – Badgers of Bunger Hill</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
       text-align: center;
-      padding: 50px;
-      background: #f0f0f0;
+    }
+    form {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
     }
     img {
       width: 300px;
-      margin: 20px 0;
+      margin-bottom: 20px;
     }
-    #container {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      display: inline-block;
-    }
-    pre {
-      text-align: left;
-      background: #eee;
-      padding: 10px;
-      overflow: auto;
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
     }
   </style>
 </head>
 <body>
 
-  <div id="container">
-    <h1 id="productName">Loading product...</h1>
-    <img id="productImage" src="" alt="Product Image" />
-    <p id="retailPrice"></p>
-    <pre id="debugOutput"></pre>
-  </div>
+  <img id="productImage" src="" alt="Product Image" />
+  <h2 id="productName">Loading...</h2>
+  <p id="productPrice">Loading price...</p>
 
-  <script>
-    const productId = "386745653";  // Test product ID (Boris shirt)
+  <form id="orderForm">
+    <input type="text" id="name" placeholder="Your Name" required />
+    <input type="email" id="email" placeholder="Your Email" required />
+    <textarea id="address" placeholder="Shipping Address" required></textarea>
+    <input type="text" id="city" placeholder="City" required />
 
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        const product = data?.result?.sync_product;
-        const variant = data?.result?.sync_variants?.[0];
+    <select id="size" required>
+      <option value="">Select Size</option>
+    </select>
 
-        if (!product || !variant) {
-          document.getElementById("productName").innerText = "Product not found.";
-          return;
-        }
+    <select id="quantity" required>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
 
-        document.getElementById("productName").innerText = product.name;
-        document.getElementById("productImage").src = product.thumbnail_url || variant.files?.[1]?.preview_url || "";
-        document.getElementById("retailPrice").innerText = "Retail Price: £" + (variant.retail_price || "N/A");
+    <button type="submit">Buy this product</button>
+  </form>
 
-        // Optional: show full raw data in <pre>
-        document.getElementById("debugOutput").innerText = JSON.stringify(data, null, 2);
-      })
-      .catch(err => {
-        document.getElementById("productName").innerText = "Error loading product";
-        document.getElementById("debugOutput").innerText = err.message;
+  <div id="result"></div>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
+
+  if (!productId) {
+    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID found");
+  }
+
+  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+    .then(res => res.json())
+    .then(data => {
+      const result = data.result;
+      const product = result?.sync_product;
+      const variants = result?.sync_variants;
+
+      if (!product || !variants) {
+        document.getElementById("result").innerText = "Product not found.";
+        return;
+      }
+
+      document.getElementById("productImage").src = product.thumbnail_url;
+      document.getElementById("productName").innerText = product.name;
+
+      // Use first variant price for now
+      document.getElementById("productPrice").innerText = "£" + variants[0].retail_price + " (includes VAT, excludes shipping)";
+
+      // Populate sizes
+      const sizeDropdown = document.getElementById("size");
+      variants.forEach(variant => {
+        const option = document.createElement("option");
+        option.value = variant.variant_id;
+        option.textContent = variant.size || variant.name;
+        sizeDropdown.appendChild(option);
       });
-  </script>
-
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "Failed to load product: " + err.message;
+    });
+</script>
 </body>
 </html>
