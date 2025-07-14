@@ -17,8 +17,39 @@ headers = {
 
 # ✅ Test route
 @app.route("/")
+
 def root():
-    return jsonify({"message": "Flask is working and CORS is enabled."})
+    return jsonify({
+        "message": "✅ Flask API is running and CORS is enabled.",
+        "routes": {
+            "/test-api": "🔧 Check connection to Printful API",
+            "/get-product-details/<product_id>": "📦 Get details of a specific Printful product",
+            "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
+            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded"
+        },
+        "example": {
+            "get_product_details": "/get-product-details/386786171",
+            "submit_order": {
+                "method": "POST",
+                "url": "/submit-order",
+                "body_format": {
+                    "recipient": {
+                        "name": "John Doe",
+                        "address1": "123 Main Street",
+                        "city": "Anytown",
+                        "country_code": "US",
+                        "zip": "12345"
+                    },
+                    "items": [
+                        {
+                            "variant_id": 1234,
+                            "quantity": 1
+                        }
+                    ]
+                }
+            }
+        }
+    })
 
 # ✅ Test Printful API connection
 @app.route("/test-api")
