@@ -36,7 +36,7 @@
 </head>
 <body>
 
-  <img id="productImage" src="" alt="Product Image" />
+  <img id="productImage" src="https://via.placeholder.com/300?text=Loading..." alt="Product Image" />
   <h2 id="productName">Loading...</h2>
   <p><strong>Price:</strong> £19.95 (includes VAT, excludes shipping)</p>
 
@@ -72,18 +72,21 @@
     throw new Error("No product ID found");
   }
 
+  console.log("Loading product ID:", productId);
+
   // Fetch the product data from your backend
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
     .then(res => res.json())
     .then(data => {
+      console.log("Product data:", data);
       if (data.result && data.result.sync_product) {
         const product = data.result.sync_product;
         const variant = data.result.sync_variants?.[0];
-        const imageUrl = product.thumbnail_url;
+        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300?text=No+Image";
 
-        document.querySelector("img").src = imageUrl;
-        document.querySelector("h2").innerText = product.name;
-        // Populate size/variant if needed...
+        document.getElementById("productImage").src = imageUrl;
+        document.getElementById("productImage").alt = product.name || "Product";
+        document.getElementById("productName").innerText = product.name || "Unnamed Product";
       } else {
         document.getElementById("result").innerText = "Product not found.";
       }
