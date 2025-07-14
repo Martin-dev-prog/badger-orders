@@ -2,54 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Product Page</title>
+  <title>Order – Badgers of Bunger Hill</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
       text-align: center;
-      padding: 30px;
+    }
+    form {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
     }
     img {
-      max-width: 300px;
-      margin: 20px 0;
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
     }
   </style>
 </head>
 <body>
 
-  <h1 id="product-name">Loading...</h1>
-  <img id="product-image" src="" alt="Product image" style="display: none;" />
-  <p id="result"></p>
+  <img id="productImage" src="" alt="Product Image" />
+  <h2 id="productName">Loading...</h2>
+  <p><strong>Price:</strong> £19.95 (includes VAT, excludes shipping)</p>
+
+  <form id="orderForm">
+    <input type="text" id="name" placeholder="Your Name" required />
+    <input type="email" id="email" placeholder="Your Email" required />
+    <textarea id="address" placeholder="Shipping Address" required></textarea>
+    <input type="text" id="city" placeholder="City" required />
+    <select id="size" required>
+      <option value="">Select Size</option>
+      <option value="S">Small</option>
+      <option value="M" selected>Medium</option>
+      <option value="L">Large</option>
+      <option value="XL">Extra Large</option>
+    </select>
+    <select id="quantity" required>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+    <button type="submit">Buy this product</button>
+  </form>
+
+  <div id="result"></div>
 
   <script>
-    async function loadProduct() {
-      const params = new URLSearchParams(window.location.search);
-      const productId = params.get("id");
+    // 🔍 Extract ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get("id");
 
-      if (!productId) {
-        document.getElementById("result").innerText = "❌ No product ID in URL.";
-        return;
-      }
+    if (!productId) {
+      document.getElementById("productName").innerText = "Error: No product ID in URL.";
+    } else {
+      // 🔄 Fetch product details from backend
+      fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+        .then(res => res.json())
+        .then(data => {
+          const result = data.result;
+          const name = result.sync_product.name;
+          const image = result.sync_product.thumbnail_url;
 
-      const res = await fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`);
-      const data = await res.json();
-
-      if (data.status_code !== 200) {
-        document.getElementById("result").innerText = "❌ Product not found.";
-        return;
-      }
-
-      const product = data.result.sync_product;
-      const image = product.thumbnail_url;
-
-      document.getElementById("product-name").innerText = product.name;
-      const imgEl = document.getElementById("product-image");
-      imgEl.src = image;
-      imgEl.style.display = "block";
+          document.getElementById("productName").innerText = name;
+          document.getElementById("productImage").src = image;
+        })
+        .catch(err => {
+          document.getElementById("productName").innerText = "Product load error";
+          console.error(err);
+        });
     }
 
-    window.onload = loadProduct;
-  </script>
+    // ✅ Submit order (optional — you can improve this later)
+    document.getElementById("orderForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        address: document.getElementById("address").value,
+        city: document.getElementById("city").value,
+        size: document.getElementById("size").value,
+        quantity: document.getElementById("quantity").value,
+        product_id: productId
+      };
 
+      fetch("https://badger-orders.onrender.com/submit-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(json => {
+        document.getElementById("result").innerText = json.message || "Thank you for your order!";
+      })
+      .catch(err => {
+        document.getElementById("result").innerText = "Error: " + err.message;
+      });
+    });
+  </script>
 </body>
 </html>
