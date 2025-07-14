@@ -75,19 +75,20 @@
   // Load product from backend
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
     .then(res => res.json())
-    .then(data => {
-      const inner = data.result?.result;
-      if (inner && inner.sync_product) {
-        const product = inner.sync_product;
-        const variant = inner.sync_variants?.[0];
+    .then(apiData => {
+      const data = apiData.result?.sync_product ? apiData.result : apiData.result?.result;
 
-        const imgUrl =
+      if (data && data.sync_product) {
+        const product = data.sync_product;
+        const variant = data.sync_variants?.[0];
+
+        const imageUrl =
           product.thumbnail_url ||
           variant?.files?.find(f => f.type === "preview")?.preview_url ||
           "";
 
-        document.getElementById("productImage").src = imgUrl;
-        document.getElementById("productName").innerText = product.name;
+        document.getElementById("productImage").src = imageUrl || "";
+        document.getElementById("productName").innerText = product.name || "No name found";
         document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
       } else {
         document.getElementById("result").innerText = "Product not found.";
@@ -97,5 +98,6 @@
       document.getElementById("result").innerText = "Failed to load product: " + err.message;
     });
 </script>
+
 </body>
 </html>
