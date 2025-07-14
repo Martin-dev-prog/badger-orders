@@ -1,30 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Debug Product Fetch</title>
+  <title>Debug Product Dump</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    pre {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-  <h1>🔍 Product Fetch Debug</h1>
-  <p>Checking product ID from URL and showing fetched JSON:</p>
-  <div id="output"><pre>Loading...</pre></div>
+  <h2>Product JSON Dump</h2>
+  <pre id="jsonDump">Loading...</pre>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
-
-    if (!productId) {
-      document.getElementById("output").innerHTML = "<pre style='color:red;'>❌ No product ID provided in URL.</pre>";
-    } else {
-      fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-        .then(res => res.json())
-        .then(data => {
-          document.querySelector("#output pre").innerText = JSON.stringify(data, null, 2);
-        })
-        .catch(err => {
-          document.querySelector("#output pre").innerText = "❌ Error: " + err.message;
-        });
-    }
+    fetch('https://badger-orders.onrender.com/get-product-details/386745653')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('jsonDump').textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById('jsonDump').textContent = 'Error fetching product: ' + err.message;
+      });
   </script>
 </body>
 </html>
