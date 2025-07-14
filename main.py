@@ -5,7 +5,13 @@ import os
 app = Flask(__name__)
 
 # 👇 INSERT YOUR PRINTFUL TOKEN HERE
-PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
+
+#PRINTFUL_TOKEN = "pk-ADD API HERE"  # Replace with your real API key
+
+if not os.getenv("PRINTFUL_TOKEN"):
+    print("❌ PRINTFUL_TOKEN missing")
+else:
+    print("✅ PRINTFUL_TOKEN loaded")
 
 # ✅ HOME PAGE ROUTE
 @app.route("/", methods=["GET"])
