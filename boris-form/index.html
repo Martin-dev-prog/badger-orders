@@ -2,149 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Order – Badgers of Bunger Hill</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f8f8f8;
-      padding: 40px;
-      text-align: center;
-    }
-    form {
-      display: inline-block;
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 400px;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-    }
-    img {
-      width: 300px;
-      margin-bottom: 20px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      color: green;
-    }
-  </style>
+  <title>Test Product Fetch</title>
 </head>
 <body>
+  <h1 id="name">Loading product...</h1>
+  <img id="image" src="" width="300" />
+  <p id="price"></p>
+  <pre id="raw"></pre>
 
-  <img id="productImage" src="" alt="Product Image" />
-  <h2 id="productName">Loading...</h2>
-  <p id="productPrice"><strong>Price:</strong></p>
+  <script>
+    const id = "386745653"; // test product
+    fetch(`https://badger-orders.onrender.com/get-product-details/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        const product = data.result.sync_product;
+        const variant = data.result.sync_variants?.[0];
 
-  <form id="orderForm">
-    <input type="text" id="name" placeholder="Your Name" required />
-    <input type="email" id="email" placeholder="Your Email" required />
-    <textarea id="address" placeholder="Shipping Address" required></textarea>
-    <input type="text" id="city" placeholder="City" required />
-    
-    <select id="size" required>
-      <option value="">Select Size</option>
-    </select>
+        document.getElementById("name").innerText = product.name;
+        document.getElementById("image").src = product.thumbnail_url;
+        document.getElementById("price").innerText = "Retail: £" + (variant?.retail_price || "??");
 
-    <select id="quantity" required>
-      <option value="1" selected>1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-    </select>
-
-    <button type="submit">Buy this product</button>
-  </form>
-
-  <div id="result"></div>
-
-<script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
-
-  if (!productId) {
-    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
-    throw new Error("No product ID found");
-  }
-
-  let selectedVariantId = null;
-  let variants = [];
-
-  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => res.json())
-    .then(data => {
-      const product = data.result.sync_product;
-      variants = data.result.sync_variants;
-
-      document.getElementById("productName").innerText = product.name;
-      document.getElementById("productImage").src = product.thumbnail_url;
-
-      const sizeSelect = document.getElementById("size");
-      variants.forEach(variant => {
-        const option = document.createElement("option");
-        option.value = variant.variant_id;
-        option.innerText = variant.size || variant.name;
-        sizeSelect.appendChild(option);
+        document.getElementById("raw").innerText = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById("name").innerText = "Failed to load: " + err.message;
       });
-
-      // Set default price
-      if (variants.length > 0) {
-        document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${variants[0].retail_price}`;
-        selectedVariantId = variants[0].variant_id;
-      }
-
-      sizeSelect.addEventListener("change", (e) => {
-        const selected = variants.find(v => v.variant_id == e.target.value);
-        if (selected) {
-          document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${selected.retail_price}`;
-          selectedVariantId = selected.variant_id;
-        }
-      });
-    })
-    .catch(err => {
-      document.getElementById("result").innerText = "Failed to load product: " + err.message;
-    });
-
-  document.getElementById("orderForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-
-    if (!selectedVariantId) {
-      document.getElementById("result").innerText = "Please select a size.";
-      return;
-    }
-
-    const data = {
-      recipient: {
-        name: document.getElementById("name").value,
-        address1: document.getElementById("address").value,
-        city: document.getElementById("city").value,
-        country_code: "GB"
-      },
-      items: [
-        {
-          variant_id: selectedVariantId,
-          quantity: parseInt(document.getElementById("quantity").value)
-        }
-      ]
-    };
-
-    fetch("https://badger-orders.onrender.com/submit-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    })
-    .then(res => res.json())
-    .then(json => {
-      document.getElementById("result").innerText = json.message || "Thank you for your order and support!";
-    })
-    .catch(err => {
-      document.getElementById("result").innerText = "Order error: " + err.message;
-    });
-  });
-</script>
-
+  </script>
 </body>
 </html>
