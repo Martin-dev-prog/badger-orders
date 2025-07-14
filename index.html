@@ -62,57 +62,35 @@
 
   <div id="result"></div>
 
-  <script>
-    // 🔍 Extract ID from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get("id");
+<script>
+  // Extract the 'id' query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
 
-    if (!productId) {
-      document.getElementById("productName").innerText = "Error: No product ID in URL.";
-    } else {
-      // 🔄 Fetch product details from backend
-      fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-        .then(res => res.json())
-        .then(data => {
-          const result = data.result;
-          const name = result.sync_product.name;
-          const image = result.sync_product.thumbnail_url;
+  if (!productId) {
+    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID found");
+  }
 
-          document.getElementById("productName").innerText = name;
-          document.getElementById("productImage").src = image;
-        })
-        .catch(err => {
-          document.getElementById("productName").innerText = "Product load error";
-          console.error(err);
-        });
-    }
+  // Fetch the product data from your backend
+  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result && data.result.sync_product) {
+        const product = data.result.sync_product;
+        const variant = data.result.sync_variants?.[0];
+        const imageUrl = product.thumbnail_url;
 
-    // ✅ Submit order (optional — you can improve this later)
-    document.getElementById("orderForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const data = {
-        name: document.getElementById("name").value,
-        email: document.getElementById("email").value,
-        address: document.getElementById("address").value,
-        city: document.getElementById("city").value,
-        size: document.getElementById("size").value,
-        quantity: document.getElementById("quantity").value,
-        product_id: productId
-      };
-
-      fetch("https://badger-orders.onrender.com/submit-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      })
-      .then(res => res.json())
-      .then(json => {
-        document.getElementById("result").innerText = json.message || "Thank you for your order!";
-      })
-      .catch(err => {
-        document.getElementById("result").innerText = "Error: " + err.message;
-      });
+        document.querySelector("img").src = imageUrl;
+        document.querySelector("h2").innerText = product.name;
+        // Populate size/variant if needed...
+      } else {
+        document.getElementById("result").innerText = "Product not found.";
+      }
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "Failed to load product: " + err.message;
     });
-  </script>
+</script>
 </body>
 </html>
