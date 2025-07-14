@@ -1,37 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Debug Product Dump</title>
+  <meta charset="UTF-8" />
+  <title>Product Debug Display</title>
   <style>
     body {
-      font-family: monospace;
+      font-family: sans-serif;
       padding: 20px;
-      background: #f4f4f4;
+      background: #f9f9f9;
     }
-    pre {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    img {
+      max-width: 300px;
+      display: block;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
-  <h2>Product JSON Dump</h2>
-  <pre id="jsonDump">Loading...</pre>
 
-  <script>
-    fetch('https://badger-orders.onrender.com/get-product-details/386745653')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('jsonDump').textContent = JSON.stringify(data, null, 2);
-      })
-      .catch(err => {
-        document.getElementById('jsonDump').textContent = 'Error fetching product: ' + err.message;
-      });
-  </script>
+<h1 id="name">Loading product...</h1>
+<img id="productImage" src="" alt="" />
+<pre id="debug"></pre>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  if (!id) {
+    document.getElementById("name").textContent = "❌ No product ID provided in URL";
+    throw new Error("Missing ID");
+  }
+
+  fetch(`https://badger-orders.onrender.com/get-product-details/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      console.log(data);
+      const result = data?.result?.result;
+
+      if (!result?.sync_product) {
+        document.getElementById("name").textContent = "❌ Product not found";
+        return;
+      }
+
+      const name = result.sync_product.name;
+      const image = result.sync_product.thumbnail_url || result.sync_variants?.[0]?.files?.[0]?.preview_url;
+
+      document.getElementById("name").textContent = name;
+      document.getElementById("productImage").src = image;
+      document.getElementById("productImage").alt = name;
+      document.getElementById("debug").textContent = JSON.stringify(result, null, 2);
+    })
+    .catch(err => {
+      document.getElementById("name").textContent = "❌ Error fetching product";
+      document.getElementById("debug").textContent = err.message;
+    });
+</script>
+
 </body>
 </html>
