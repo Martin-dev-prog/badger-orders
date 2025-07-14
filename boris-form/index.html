@@ -1,51 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Badger Product Order</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #2e7d32;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
 
-<div style="max-width: 500px;margin: 0 auto;padding: 10px">
-  <form action="https://badger-orders.onrender.com/submit-order" method="POST">
-    <img src="https://martinnewboldmn.wordpress.com/wp-content/uploads/2025/07/966dfedff87b139a2f67c2fd0359c3bb.png" alt="Shirt" style="width: 100%;height: auto;margin-bottom: 20px;display: block" />
+  <h2 id="product-name">Loading...</h2>
+  <img id="product-image" src="" alt="Product Image" />
 
-    <h2 style="color: #222">Order Your Shirt</h2>
-    <h4><b>🦡 Boris Says Grrr...! Don’t Touch My Tail Shirt</b></h4>
-    <p><strong>Price:</strong> £19.00<br>
-    <strong>Delivery:</strong> £3.29-£8.69<br>
+  <form id="order-form" method="POST" action="https://badger-orders.onrender.com/submit-order">
+    <label for="name">Name:</label>
+    <input type="text" name="name" required>
 
+    <label for="email">Email:</label>
+    <input type="email" name="email" required>
 
-    Name:<br>
-    <input name="name" type="text" required style="width: 100%"><br><br>
+    <label for="address">Address:</label>
+    <input type="text" name="address" required>
 
-    Email:<br>
-    <input name="email" type="email" required style="width: 100%"><br><br>
+    <label for="city">City:</label>
+    <input type="text" name="city" required>
 
-    Address:<br>
-    <input name="address" type="text" required style="width: 100%"><br><br>
+    <label for="variant_id">Choose a size:</label>
+    <select name="variant_id" id="variant-select" required></select>
 
-    City:<br>
-    <input name="city" type="text" required style="width: 100%"><br><br>
-
-    Size:<br>
-    <select name="size" required style="width: 100%">
-      <option>Small</option>
-      <option>Medium</option>
-      <option>Large</option>
-      <option>XL</option>
-    </select><br><br>
-
-    Quantity:<br>
-    <select name="quantity" style="width: 100%">
+    <label for="quantity">Quantity:</label>
+    <select name="quantity">
       <option>1</option>
       <option>2</option>
       <option>3</option>
       <option>4</option>
       <option>5</option>
-    </select><br><br>
+    </select>
 
-    <button type="submit" style="padding: 10px 20px;background-color: #2a2;color: #fff;border: none;border-radius: 5px;cursor: pointer">
-      Buy this shirt
-    </button>
+    <button type="submit">🛒 Buy This Item</button>
   </form>
 
-  <p style="margin-top: 20px;font-size: 0.75em;color: #777;font-style: italic;text-align: center">
-    Thank you for your order and support!<br>
-    Fulfilled securely via Printful.
-  </p>
-</div>
+  <script>
+    async function loadProduct() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get("id");
 
+      if (!id) {
+        document.getElementById("product-name").innerText = "❌ No product ID provided.";
+        document.getElementById("order-form").style.display = "none";
+        return;
+      }
+
+      const response = await fetch(`https://badger-orders.onrender.com/get-product-details/${id}`);
+      const data = await response.json();
+
+      if (data.error || !data.result) {
+        document.getElementById("product-name").innerText = "❌ Product not found.";
+        document.getElementById("order-form").style.display = "none";
+        return;
+      }
+
+      const product = data.result;
+      document.getElementById("product-name").innerText = product.name;
+      document.getElementById("product-image").src = product.thumbnail_url;
+
+      const variantSelect = document.getElementById("variant-select");
+      variantSelect.innerHTML = ""; // Clear previous options
+
+      const variants = product.variants || [];
+      variants.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = v.name;
+        variantSelect.appendChild(opt);
+      });
+    }
+
+    window.onload = loadProduct;
+  </script>
+
+</body>
+</html>
