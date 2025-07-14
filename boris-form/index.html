@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Order – Badgers of Bunger Hill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f8f8f8;
-      padding: 40px;
+      padding: 20px;
       text-align: center;
     }
     form {
@@ -16,7 +17,8 @@
       background: white;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 400px;
+      max-width: 100%;
+      width: 380px;
     }
     input, select, textarea, button {
       width: 100%;
@@ -24,7 +26,8 @@
       margin-top: 10px;
     }
     img {
-      width: 300px;
+      width: 100%;
+      max-width: 300px;
       margin-bottom: 20px;
     }
     #result {
@@ -38,7 +41,7 @@
 
   <img id="productImage" src="" alt="Product Image" />
   <h2 id="productName">Loading...</h2>
-  <p id="productPrice"><strong>Price:</strong> Loading...</p>
+  <p><strong>Price:</strong> £19.95 (includes VAT, excludes shipping)</p>
 
   <form id="orderForm">
     <input type="text" id="name" placeholder="Your Name" required />
@@ -67,39 +70,50 @@
   const productId = urlParams.get('id');
 
   if (!productId) {
-    document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
-    throw new Error("No product ID in URL");
+    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID found");
   }
 
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
     .then(res => res.json())
     .then(data => {
-      const result = data?.result?.result || data?.result;
+      if (data.result && data.result.sync_product) {
+        const product = data.result.sync_product;
+        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
 
-      if (!result || !result.sync_product) {
-        document.getElementById("result").innerText = "❌ Product not found.";
-        return;
+        document.getElementById("productImage").src = imageUrl;
+        document.getElementById("productName").innerText = product.name;
+      } else {
+        document.getElementById("result").innerText = "Product not found.";
       }
-
-      const product = result.sync_product;
-      const variant = result.sync_variants?.[0];
-
-      // Image: try thumbnail, fallback to variant image
-      const imageUrl =
-        product.thumbnail_url ||
-        variant?.files?.find(f => f.type === "preview")?.preview_url ||
-        "";
-
-      document.getElementById("productImage").src = imageUrl || "";
-      document.getElementById("productName").innerText = product.name || "Unnamed Product";
-      document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
     })
     .catch(err => {
-      document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
+      document.getElementById("result").innerText = "Failed to load product: " + err.message;
     });
+
+  document.getElementById("orderForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      address: document.getElementById("address").value,
+      city: document.getElementById("city").value,
+      size: document.getElementById("size").value,
+      quantity: document.getElementById("quantity").value
+    };
+    fetch("https://badger-orders.onrender.com/submit-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(json => {
+      document.getElementById("result").innerText = json.message || "Thank you for your order and support!";
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "Error: " + err.message;
+    });
+  });
 </script>
-
-
-
 </body>
 </html>
