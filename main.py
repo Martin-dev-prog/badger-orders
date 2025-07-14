@@ -30,6 +30,82 @@ def test_api():
     })
 
 # ✅ GET PRODUCTS ROUTE
+@app.route("/get-product-details/<int:product_id>", methods=["GET"])
+def get_product_details(product_id):
+    headers = {
+        "Authorization": f"Bearer {PRINTFUL_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get(f"https://api.printful.com/store/products/{product_id}", headers=headers)
+    if response.status_code != 200:
+        return jsonify({"error": "Product not found", "status": response.status_code})
+
+    return jsonify(response.json())
+✅ This will let your form fetch product data by ID like:
+
+arduino
+Copy
+Edit
+https://badger-orders.onrender.com/get-product-details/386786171
+✅ Frontend Form Logic (boris-form)
+Now update your GitHub page's boris-form.html to:
+
+Grab the id from URL
+
+Call your /get-product-details API
+
+Inject product name/image/variant into the form
+
+✅ Add this JS snippet to your boris-form.html:
+html
+Copy
+Edit
+<script>
+async function loadProduct() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get("id");
+
+  if (!id) {
+    document.getElementById("product-info").innerHTML = "❌ No product ID specified.";
+    return;
+  }
+
+  const response = await fetch(`https://badger-orders.onrender.com/get-product-details/${id}`);
+  const data = await response.json();
+
+  if (data.error) {
+    document.getElementById("product-info").innerHTML = "❌ Failed to load product.";
+    return;
+  }
+
+  const product = data.result;
+  const variants = product.variants || [];
+
+  document.getElementById("product-name").innerText = product.name;
+  document.getElementById("product-thumb").src = product.thumbnail_url;
+  
+  // Build variant dropdown
+  const variantSelect = document.getElementById("variant-select");
+  variants.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.id;
+    option.text = v.name;
+    variantSelect.appendChild(option);
+  });
+}
+window.onload = loadProduct;
+</script>
+✅ Update HTML in boris-form.html
+Add placeholders to fill in:
+
+html
+Copy
+Edit
+<h2 id="product-name">Loading product...</h2>
+<img id="product-thumb"
+
+
 @app.route("/get-products", methods=["GET"])
 def get_products():
     headers = {
