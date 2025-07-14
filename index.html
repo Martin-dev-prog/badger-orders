@@ -2,108 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Order Shirt – Badgers of Bunger Hill</title>
+  <title>Product Page</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f8f8f8;
-      padding: 40px;
+      font-family: sans-serif;
       text-align: center;
-    }
-    form {
-      display: inline-block;
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 400px;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 30px;
     }
     img {
-      width: 300px;
-      margin-bottom: 20px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      color: green;
+      max-width: 300px;
+      margin: 20px 0;
     }
   </style>
 </head>
 <body>
 
-  <img src="https://martinnewboldmn.wordpress.com/wp-content/uploads/2025/07/966dfedff87b139a2f67c2fd0359c3bb.png" alt="Shirt" />
+  <h1 id="product-name">Loading...</h1>
+  <img id="product-image" src="" alt="Product image" style="display: none;" />
+  <p id="result"></p>
 
-  <h2>Order Now</h2>
-  <p><strong>Price:</strong> £19.95 (includes VAT, excludes shipping £3.29-£8.69)</p>
- 
-  <form id="orderForm">
-    <input type="text" id="name" placeholder="Your Name" required />
-    <input type="email" id="email" placeholder="Your Email" required />
-    <textarea id="address" placeholder="Shipping Address" required></textarea>
-    <input type="text" id="city" placeholder="City" required />
-    <select id="size" required>
-      <option value="">Select Size</option>
-      <option value="S">Small</option>
-      <option value="M" selected>Medium</option>
-      <option value="L">Large</option>
-      <option value="XL">Extra Large</option>
-    </select>
-    <select id="quantity" required>
-      <option value="1" selected>1 Shirt</option>
-      <option value="2">2 Shirts</option>
-      <option value="3">3 Shirts</option>
-      <option value="4">4 Shirts</option>
-      <option value="5">5 Shirts</option>
-    </select>
-    <button type="submit">Buy this shirt</button>
-  </form>
+  <script>
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("id");
 
-  <div id="result"></div>
+      if (!productId) {
+        document.getElementById("result").innerText = "❌ No product ID in URL.";
+        return;
+      }
 
- <script>
-  async function loadProductDetails() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get("id");
+      const res = await fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`);
+      const data = await res.json();
 
-    if (!productId) {
-      document.getElementById("result").innerText = "❌ No product ID specified in URL.";
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`);
-      const data = await response.json();
-
-      if (data.status_code !== 200 || !data.result || !data.result.sync_product) {
+      if (data.status_code !== 200) {
         document.getElementById("result").innerText = "❌ Product not found.";
         return;
       }
 
       const product = data.result.sync_product;
-      const variant = data.result.sync_variants?.[0] || {};
+      const image = product.thumbnail_url;
 
-      // ✅ Update the image and title
-      document.querySelector("img").src = product.thumbnail_url;
-      document.querySelector("h2").innerText = product.name;
-
-      // ✅ Update price if available
-      if (variant.retail_price) {
-        document.querySelector("p").innerHTML = `<strong>Price:</strong> £${variant.retail_price} (includes VAT, excludes shipping £3.29–£8.69)`;
-      }
-
-      // ✅ Optionally update sizes or variants dynamically here if needed
-
-    } catch (err) {
-      document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
+      document.getElementById("product-name").innerText = product.name;
+      const imgEl = document.getElementById("product-image");
+      imgEl.src = image;
+      imgEl.style.display = "block";
     }
-  }
 
-  window.onload = loadProductDetails;
-</script>
+    window.onload = loadProduct;
+  </script>
+
 </body>
 </html>
