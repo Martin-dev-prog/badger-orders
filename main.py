@@ -77,33 +77,26 @@ def get_product_details(product_id):
 # ✅ Get all product IDs (driver route you mentioned)
 @app.route("/get-product-ids")
 def get_product_ids():
+    url = "https://api.printful.com/store/products"
     all_products = []
     offset = 0
-    limit = 20  # Printful default
+    limit = 20  # Adjust if you know Printful allows more per page
 
     while True:
-        url = f"https://api.printful.com/store/products?offset={offset}&limit={limit}"
-        r = requests.get(url, headers=headers)
-
+        paged_url = f"{url}?limit={limit}&offset={offset}"
+        r = requests.get(paged_url, headers=headers)
         if r.status_code != 200:
             return jsonify({"error": "Failed to fetch product list", "status_code": r.status_code})
+        data = r.json()
+        products = data.get("result", [])
+        all_products.extend(products)
 
-        data = r.json().get("result", [])
-        if not data:
-            break  # No more products
-
-        for product in data:
-            all_products.append({
-                "id": product.get("id"),
-                "name": product.get("name")
-            })
-
-        if len(data) < limit:
-            break  # Last page
+        if len(products) < limit:
+            break  # No more pages
         offset += limit
 
-    return jsonify(all_products)
-
+    ids = [{"id": p["id"], "name": p["name"]} for p in all_products]
+    return jsonify(ids)
 # ✅ Debug env
 @app.route("/debug-env")
 def debug_env():
