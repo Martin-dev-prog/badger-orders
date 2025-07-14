@@ -15,30 +15,33 @@ headers = {
     "Authorization": f"Bearer {PRINTFUL_TOKEN}"
 }
 
-# ✅ Test route
-@app.route("/")
 
+# ✅ Root route: Display available commands
+@app.route("/")
 def root():
     return jsonify({
-        "message": "✅ Flask API is running and CORS is enabled.",
-        "routes": {
-            "/test-api": "🔧 Check connection to Printful API",
-            "/get-product-details/<product_id>": "📦 Get details of a specific Printful product",
-            "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
-            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded"
+        "✅ Flask API is running": True,
+        "Available Routes": {
+            "/test-api": "🔧 Check Printful API connection",
+            "/get-product-details/<product_id>": "📦 Get full details for one product",
+            "/get-product-ids": "📋 Get list of all product IDs (and names)",
+            "/submit-order": "🛒 Submit order (POST JSON)",
+            "/debug-env": "🧪 Debug API token"
         },
-        "example": {
-            "get_product_details": "/get-product-details/386786171",
-            "submit_order": {
-                "method": "POST",
-                "url": "/submit-order",
-                "body_format": {
+        "Examples": {
+            "Test API": "/test-api",
+            "Product Details": "/get-product-details/386786171",
+            "Product List": "/get-product-ids",
+            "Order Submission": {
+                "Method": "POST",
+                "URL": "/submit-order",
+                "Body Format": {
                     "recipient": {
                         "name": "John Doe",
-                        "address1": "123 Main Street",
-                        "city": "Anytown",
-                        "country_code": "US",
-                        "zip": "12345"
+                        "address1": "123 Main St",
+                        "city": "London",
+                        "zip": "W1A 1AA",
+                        "country_code": "GB"
                     },
                     "items": [
                         {
