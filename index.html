@@ -63,7 +63,6 @@
   <div id="result"></div>
 
 <script>
-  // Extract the 'id' query parameter
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
 
@@ -72,21 +71,18 @@
     throw new Error("No product ID found");
   }
 
-  console.log("Loading product ID:", productId);
-
-  // Fetch the product data from your backend
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
     .then(res => res.json())
     .then(data => {
-      console.log("Product data:", data);
-      if (data.result && data.result.sync_product) {
-        const product = data.result.sync_product;
-        const variant = data.result.sync_variants?.[0];
+      console.log("Full response:", data);  // Optional for debugging
+
+      const productData = data?.result?.result;
+      if (productData && productData.sync_product) {
+        const product = productData.sync_product;
         const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300?text=No+Image";
 
         document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productImage").alt = product.name || "Product";
-        document.getElementById("productName").innerText = product.name || "Unnamed Product";
+        document.getElementById("productName").innerText = product.name;
       } else {
         document.getElementById("result").innerText = "Product not found.";
       }
