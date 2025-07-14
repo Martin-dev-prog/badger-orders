@@ -1,36 +1,30 @@
-<script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Product Fetch</title>
+</head>
+<body>
+  <h1>🔍 Product Fetch Debug</h1>
+  <p>Checking product ID from URL and showing fetched JSON:</p>
+  <div id="output"><pre>Loading...</pre></div>
 
-  if (!productId) {
-    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
-    throw new Error("No product ID found");
-  }
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
 
-  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => res.json())
-    .then(data => {
-      const product = data.result?.result?.sync_product;
-      const variant = data.result?.result?.sync_variants?.[0];
-
-      if (product && variant) {
-        const imageUrl = product.thumbnail_url || variant.product?.image || variant.files?.[0]?.preview_url || '';
-
-        document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productName").innerText = product.name;
-      } else {
-        document.getElementById("result").innerText = "Product not found.";
-      }
-    })
-    .catch(err => {
-      document.getElementById("result").innerText = "Failed to load product: " + err.message;
-    });
-</script>
-✅ Optional: Update <img> and <h2> IDs for Clarity
-Make sure the HTML has matching id="productImage" and id="productName":
-
-html
-Copy
-Edit
-<img id="productImage" src="" alt="Product Image" />
-<h2 id="productName">Loading...</h2>
+    if (!productId) {
+      document.getElementById("output").innerHTML = "<pre style='color:red;'>❌ No product ID provided in URL.</pre>";
+    } else {
+      fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+        .then(res => res.json())
+        .then(data => {
+          document.querySelector("#output pre").innerText = JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          document.querySelector("#output pre").innerText = "❌ Error: " + err.message;
+        });
+    }
+  </script>
+</body>
+</html>
