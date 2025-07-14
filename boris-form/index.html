@@ -2,31 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Test Product Fetch</title>
+  <title>Test Product – Badgers of Bunger Hill</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background: #f0f0f0;
+    }
+    img {
+      width: 300px;
+      margin: 20px 0;
+    }
+    #container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: inline-block;
+    }
+    pre {
+      text-align: left;
+      background: #eee;
+      padding: 10px;
+      overflow: auto;
+    }
+  </style>
 </head>
 <body>
-  <h1 id="name">Loading product...</h1>
-  <img id="image" src="" width="300" />
-  <p id="price"></p>
-  <pre id="raw"></pre>
+
+  <div id="container">
+    <h1 id="productName">Loading product...</h1>
+    <img id="productImage" src="" alt="Product Image" />
+    <p id="retailPrice"></p>
+    <pre id="debugOutput"></pre>
+  </div>
 
   <script>
-    const id = "386745653"; // test product
-    fetch(`https://badger-orders.onrender.com/get-product-details/${id}`)
+    const productId = "386745653";  // Test product ID (Boris shirt)
+
+    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
       .then(res => res.json())
       .then(data => {
-        const product = data.result.sync_product;
-        const variant = data.result.sync_variants?.[0];
+        const product = data?.result?.sync_product;
+        const variant = data?.result?.sync_variants?.[0];
 
-        document.getElementById("name").innerText = product.name;
-        document.getElementById("image").src = product.thumbnail_url;
-        document.getElementById("price").innerText = "Retail: £" + (variant?.retail_price || "??");
+        if (!product || !variant) {
+          document.getElementById("productName").innerText = "Product not found.";
+          return;
+        }
 
-        document.getElementById("raw").innerText = JSON.stringify(data, null, 2);
+        document.getElementById("productName").innerText = product.name;
+        document.getElementById("productImage").src = product.thumbnail_url || variant.files?.[1]?.preview_url || "";
+        document.getElementById("retailPrice").innerText = "Retail Price: £" + (variant.retail_price || "N/A");
+
+        // Optional: show full raw data in <pre>
+        document.getElementById("debugOutput").innerText = JSON.stringify(data, null, 2);
       })
       .catch(err => {
-        document.getElementById("name").innerText = "Failed to load: " + err.message;
+        document.getElementById("productName").innerText = "Error loading product";
+        document.getElementById("debugOutput").innerText = err.message;
       });
   </script>
+
 </body>
 </html>
