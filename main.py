@@ -1,7 +1,5 @@
 import os
 import requests
-import JSONResponse
-
 
 
 app = Flask(__name__)
