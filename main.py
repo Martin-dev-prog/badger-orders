@@ -1,7 +1,7 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
+import requests
 
 # ✅ Load Printful API key from environment
 PRINTFUL_TOKEN = os.getenv("PRINTFUL_API_KEY")
@@ -13,17 +13,10 @@ headers = {
     "Authorization": f"Bearer {PRINTFUL_TOKEN}"
 }
 
-# ✅ Create FastAPI app
-app = FastAPI()
 
-# ✅ Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Replace with ["https://martin-dev-prog.github.io"] if you want it strict
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ✅ Setup Flask and CORS
+app = Flask(__name__)
+CORS(app)
 
 # ✅ Test route
 @app.get("/")
