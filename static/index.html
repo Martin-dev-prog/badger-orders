@@ -90,6 +90,14 @@
       return;
     }
 
+    // PREFILL FORM VALUES FROM URL PARAMETERS - ADDED
+    document.getElementById('name').value = params.get('name') || '';
+    document.getElementById('email').value = params.get('email') || '';
+    document.getElementById('address').value = params.get('address') || '';
+    document.getElementById('city').value = params.get('city') || '';
+    quantitySelect.value = params.get('quantity') || '1';
+    // END OF PREFILL
+
     let selectedVariantId = null;
     let unitPrice = 0;
     let paymentSuccess = false;
