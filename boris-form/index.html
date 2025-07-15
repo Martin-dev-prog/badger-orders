@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Order – Boris says Grr!</title>
+  <meta charset="UTF-8" />
+  <title>Order – Boris Mug</title>
   <style>
-    body { font-family: sans-serif; background: #f9f9f9; padding: 30px; text-align: center; }
-    form { display: inline-block; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; max-width: 400px; }
+    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
+    form { display: inline-block; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc; max-width: 400px; }
     input, textarea, select, button { width: 100%; padding: 10px; margin-top: 10px; }
-    img { width: 300px; margin-bottom: 15px; }
+    img { width: 250px; margin-bottom: 20px; }
     #result { margin-top: 20px; font-weight: bold; color: green; }
   </style>
 </head>
@@ -15,7 +15,7 @@
 
   <img id="productImage" src="" alt="Product Image" />
   <h2 id="productName">Loading...</h2>
-  <p id="productPrice">Price: Loading...</p>
+  <p id="productPrice"><strong>Price:</strong> Loading...</p>
 
   <form id="orderForm">
     <input type="text" id="name" placeholder="Your Name" required />
@@ -32,29 +32,37 @@
   <div id="result"></div>
 
   <script>
-    const productId = new URLSearchParams(window.location.search).get('id');
-    const productUrl = `https://badger-orders.onrender.com/get-product-details/${productId}`;
+    const productId = new URLSearchParams(window.location.search).get("id");
+
+    if (!productId) {
+      document.body.innerHTML = "<p style='color:red;'>❌ No product ID in URL</p>";
+      throw new Error("Missing product ID");
+    }
+
     let selectedVariantId = null;
     let price = 0;
 
-    fetch(productUrl)
+    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
       .then(res => res.json())
       .then(data => {
-        const result = data.result?.result || data.result;
+        const result = data.result?.result;
+        if (!result) throw new Error("Bad API structure");
+
         const product = result.sync_product;
-        const variant = result.sync_variants?.[0];
+        const variant = result.sync_variants[0];
 
-        if (!product || !variant) throw new Error("Invalid product data");
+        if (!variant) throw new Error("No variant found");
 
-        // Use preview image if available
-        const previewImage = variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url || "";
+        const previewImage =
+          variant.files.find(f => f.type === "preview")?.preview_url ||
+          product.thumbnail_url || "";
 
         selectedVariantId = variant.variant_id;
         price = parseFloat(variant.retail_price);
 
         document.getElementById("productImage").src = previewImage;
         document.getElementById("productName").innerText = product.name;
-        document.getElementById("productPrice").innerText = `Price: £${price.toFixed(2)}`;
+        document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${price.toFixed(2)}`;
       })
       .catch(err => {
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
@@ -77,15 +85,4 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("result").innerText = data.message || "✅ Order placed!";
-      })
-      .catch(err => {
-        document.getElementById("result").innerText = "❌ Order failed: " + err.message;
-      });
-    });
-  </script>
-
-</body>
-</html>
+        .then(res => res.json
