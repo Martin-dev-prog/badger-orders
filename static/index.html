@@ -85,8 +85,8 @@
   const quantitySelect = document.getElementById('quantity');
 
   if (!productId) {
-    document.body.innerHTML = '<p style="color:red">❌ Product ID not found in URL.</p>';
-    throw new Error("No product ID");
+    document.body.innerHTML = '<p style="color:red; font-weight:bold;">❌ Product ID not found in URL. Please provide a product ID using ?id=PRODUCT_ID in the URL.</p>';
+    return;
   }
 
   let selectedVariantId = null;
