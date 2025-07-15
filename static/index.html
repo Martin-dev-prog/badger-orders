@@ -27,9 +27,6 @@
       padding: 10px;
       margin-top: 10px;
     }
-    #paymentOptions {
-      margin-top: 20px;
-    }
     #submitBtn {
       background-color: #4CAF50;
       color: white;
@@ -47,21 +44,7 @@
       font-weight: bold;
       color: red;
     }
-    /* Stripe Element styling */
-    #card-element {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-top: 10px;
-    }
-    #card-errors {
-      color: red;
-      margin-top: 10px;
-    }
   </style>
-
-  <!-- Load Stripe.js -->
-  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <div class="container">
@@ -81,14 +64,7 @@
         <option value="3">3</option>
       </select>
 
-      <div id="paymentOptions">
-        <h3>Payment</h3>
-        <!-- Stripe Card Element -->
-        <div id="card-element"></div>
-        <div id="card-errors" role="alert"></div>
-      </div>
-
-      <button type="submit" id="submitBtn" disabled>✅ Confirm & Order</button>
+      <button type="submit" id="submitBtn">✅ Confirm & Order</button>
     </form>
 
     <div id="result"></div>
@@ -114,7 +90,6 @@
 
     let selectedVariantId = null;
     let unitPrice = 0;
-    let paymentSuccess = false;
 
     function updateTotalPrice() {
       const qty = parseInt(quantitySelect.value);
@@ -140,123 +115,4 @@
       document.getElementById('variantId').innerText = selectedVariantId;
       document.getElementById('unitPrice').innerText = unitPrice.toFixed(2);
       document.getElementById('totalPrice').innerText = unitPrice.toFixed(2);
-      document.getElementById('productImage').src = variant.files[0].preview_url;
-
-      updateTotalPrice();
-    } catch (err) {
-      console.error("Error fetching product:", err);
-      document.getElementById('result').innerText = '❌ Product not found or API error.';
-      return;
-    }
-
-    // Initialize Stripe
-    const stripe = Stripe('YOUR_PUBLISHABLE_STRIPE_KEY'); // <-- Replace with your actual publishable key!
-    const elements = stripe.elements();
-    const cardElement = elements.create('card');
-    cardElement.mount('#card-element');
-
-    // Handle real-time validation errors from the card Element.
-    cardElement.on('change', function(event) {
-      const displayError = document.getElementById('card-errors');
-      if (event.error) {
-        displayError.textContent = event.error.message;
-      } else {
-        displayError.textContent = '';
-      }
-    });
-
-    // Enable submit button only after card is valid
-    let cardValid = false;
-    cardElement.on('change', function(event) {
-      cardValid = !event.error;
-      document.getElementById('submitBtn').disabled = !cardValid;
-    });
-
-    // Handle form submission
-    document.getElementById('orderForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-
-      if (!cardValid) {
-        alert("Please complete card details correctly before submitting.");
-        return;
-      }
-
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const address = document.getElementById('address').value;
-      const city = document.getElementById('city').value;
-      const quantity = quantitySelect.value;
-
-      // Calculate amount in pence (assumes GBP)
-      const amountInPence = Math.round(unitPrice * quantity * 100);
-
-      // Create PaymentIntent on backend
-      let clientSecret;
-      try {
-        const response = await fetch('/create-payment-intent', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({amount: amountInPence, currency: 'gbp'})
-        });
-
-        const paymentData = await response.json();
-        if (paymentData.error) {
-          document.getElementById('result').innerText = '❌ Payment failed: ' + paymentData.error;
-          return;
-        }
-        clientSecret = paymentData.clientSecret;
-      } catch (err) {
-        document.getElementById('result').innerText = '❌ Payment error: ' + err.message;
-        return;
-      }
-
-      // Confirm the card payment with Stripe
-      const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: name,
-            email: email,
-            address: {
-              line1: address,
-              city: city,
-            }
-          }
-        }
-      });
-
-      if (error) {
-        document.getElementById('result').innerText = '❌ Payment failed: ' + error.message;
-      } else if (paymentIntent.status === 'succeeded') {
-        document.getElementById('result').innerText = '✅ Payment successful! Submitting your order...';
-
-        // Submit your order to your backend
-        const payload = {
-          name: name,
-          email: email,
-          address: address,
-          city: city,
-          quantity: quantity,
-          variant_id: selectedVariantId
-        };
-
-        try {
-          const orderRes = await fetch('https://badger-orders.onrender.com/submit-order', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-          });
-
-          if (!orderRes.ok) throw new Error("Order submission failed");
-
-          document.getElementById('result').innerText = '✅ Order submitted successfully! Thank you.';
-        } catch (orderErr) {
-          document.getElementById('result').innerText = '❌ Order submission error: ' + orderErr.message;
-        }
-      }
-    });
-
-  })();
-</script>
-</body>
-</html>
+      document.getE
