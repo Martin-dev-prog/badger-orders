@@ -34,9 +34,6 @@
       font-weight: bold;
       color: green;
     }
-    #size {
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -50,13 +47,8 @@
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
-
-    <select id="size">
-      <option value="">Select Size</option>
-    </select>
-
-    <input type="number" id="quantity" placeholder="Quantity" min="1" value="1" required />
-
+    <select id="size" style="display:none;"></select>
+    <input type="number" id="quantity" placeholder="Quantity" value="1" min="1" required />
     <button type="submit">Buy this product</button>
   </form>
 
@@ -69,28 +61,24 @@
 
     if (!productId) {
       document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
-      throw new Error("No product ID in URL");
+      return;
     }
 
+    let selectedVariantId = null;
+    let basePrice = 0;
     const sizeSelect = document.getElementById("size");
     const quantityInput = document.getElementById("quantity");
 
-    let basePrice = 19.95;
-    let selectedVariantId = null;
-    let variantMap = {};
-
-    function updatePrice() {
+    function updatePriceDisplay() {
       const qty = parseInt(quantityInput.value) || 1;
       const total = (basePrice * qty).toFixed(2);
-      document.getElementById("productPrice").innerHTML =
-        `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
+      document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
     }
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
       .then(res => res.json())
       .then(data => {
         const result = data?.result?.result || data?.result;
-
         if (!result || !result.sync_product) {
           document.getElementById("result").innerText = "❌ Product not found.";
           return;
@@ -98,68 +86,66 @@
 
         const product = result.sync_product;
         const variants = result.sync_variants || [];
+        const variantMap = {};
+
+        // Set product image
+        let imageUrl = product.thumbnail_url || "";
+        if (variants.length === 1 && variants[0].files?.length > 0) {
+          imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
+        }
+        document.getElementById("productImage").src = imageUrl;
 
         document.getElementById("productName").innerText = product.name;
 
-        if (variants.length > 0) {
+        if (variants.length > 1) {
           sizeSelect.style.display = "block";
-
-          for (let v of variants) {
-            const label = v.size || "M";
-            const option = document.createElement("option");
-            option.value = label;
-            option.text = label;
-            sizeSelect.appendChild(option);
-
-            variantMap[label.toUpperCase()] = {
-              id: v.variant_id,
-              price: parseFloat(v.retail_price),
-              image: v.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url
+          sizeSelect.innerHTML = '<option value="">Select Size</option>';
+          for (const variant of variants) {
+            const size = variant.size || "M";
+            variantMap[size.toUpperCase()] = {
+              id: variant.variant_id,
+              price: parseFloat(variant.retail_price),
+              image: variant.files?.find(f => f.type === "preview")?.preview_url || imageUrl
             };
+            sizeSelect.innerHTML += `<option value="${size.toUpperCase()}">${size}</option>`;
           }
 
-          const defaultVariant = variants[0];
-          selectedVariantId = defaultVariant.variant_id;
-          basePrice = parseFloat(defaultVariant.retail_price);
-          document.getElementById("productImage").src = defaultVariant.files?.[0]?.preview_url || product.thumbnail_url;
-
+          sizeSelect.addEventListener("change", () => {
+            const chosen = sizeSelect.value;
+            if (variantMap[chosen]) {
+              selectedVariantId = variantMap[chosen].id;
+              basePrice = variantMap[chosen].price;
+              document.getElementById("productImage").src = variantMap[chosen].image;
+              updatePriceDisplay();
+            }
+          });
         } else {
-          selectedVariantId = productId;
-          basePrice = 19.95;
-          document.getElementById("productImage").src = product.thumbnail_url || "";
+          selectedVariantId = variants[0]?.variant_id || "UNKNOWN";
+          basePrice = parseFloat(variants[0]?.retail_price || "5.50");
         }
 
-        updatePrice();
+        updatePriceDisplay();
       })
       .catch(err => {
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
       });
 
-    sizeSelect.addEventListener("change", function () {
-      const chosen = sizeSelect.value.toUpperCase();
-      const v = variantMap[chosen];
-      if (v) {
-        basePrice = v.price;
-        selectedVariantId = v.id;
-        document.getElementById("productImage").src = v.image;
-        updatePrice();
-      }
-    });
-
-    quantityInput.addEventListener("input", updatePrice);
+    quantityInput.addEventListener("change", updatePriceDisplay);
 
     document.getElementById("orderForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
-      const params = new URLSearchParams({
-        variant_id: selectedVariantId,
-        qty: quantityInput.value,
+      const payload = {
         name: document.getElementById("name").value,
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
-        city: document.getElementById("city").value
-      });
+        city: document.getElementById("city").value,
+        size: sizeSelect.value || "N/A",
+        quantity: quantityInput.value,
+        variant_id: selectedVariantId || "UNKNOWN"
+      };
 
+      const params = new URLSearchParams(payload);
       window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
     });
   });
