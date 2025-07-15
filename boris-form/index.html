@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Order – Badgers of Bunger Hill</title>
   <style>
     body {
@@ -45,14 +45,17 @@
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
-    <select id="size" required>
+    
+    <select id="variantSelect" required>
       <option value="">Select Variant</option>
     </select>
+    
     <select id="quantity" required>
       <option value="1" selected>1</option>
       <option value="2">2</option>
       <option value="3">3</option>
     </select>
+
     <button type="submit">Buy this product</button>
   </form>
 
@@ -68,16 +71,15 @@
       throw new Error("No product ID in URL");
     }
 
-    const sizeInput = document.getElementById("size");
-    const quantityInput = document.getElementById("quantity");
-    const productImage = document.getElementById("productImage");
-
     let variantMap = {};
     let selectedVariantId = null;
-    let basePrice = 19.00;
+    let basePrice = 19.95;
+
+    const variantSelect = document.getElementById("variantSelect");
+    const quantityInput = document.getElementById("quantity");
 
     function updatePriceDisplay() {
-      const qty = parseInt(quantityInput.value) || 1;
+      const qty = parseInt(quantityInput.value);
       const total = (basePrice * qty).toFixed(2);
       document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
     }
@@ -95,28 +97,30 @@
         const product = result.sync_product;
         const variants = result.sync_variants || [];
 
+        // Populate variant dropdown
         variants.forEach(variant => {
-          const key = (variant.color || variant.size || "default").toLowerCase();
-          variantMap[key] = {
-            id: variant.variant_id,
+          const label = variant.size || variant.color || `Variant ${variant.variant_id}`;
+          variantMap[variant.variant_id] = {
+            label,
             price: parseFloat(variant.retail_price),
-            image: variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url,
-            label: variant.color || variant.size || "Default"
+            image: variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url
           };
 
           const option = document.createElement("option");
-          option.value = key;
-          option.textContent = variant.color || variant.size || "Default";
-          sizeInput.appendChild(option);
+          option.value = variant.variant_id;
+          option.text = label;
+          variantSelect.appendChild(option);
         });
 
-        // Set default to first variant
-        const defaultKey = Object.keys(variantMap)[0];
-        const defaultVariant = variantMap[defaultKey];
-        selectedVariantId = defaultVariant.id;
-        basePrice = defaultVariant.price;
+        // Set default selection
+        const firstVariant = variants[0];
+        if (firstVariant) {
+          variantSelect.value = firstVariant.variant_id;
+          selectedVariantId = firstVariant.variant_id;
+          basePrice = parseFloat(firstVariant.retail_price);
+          document.getElementById("productImage").src = variantMap[selectedVariantId].image;
+        }
 
-        productImage.src = defaultVariant.image;
         document.getElementById("productName").innerText = product.name;
         updatePriceDisplay();
       })
@@ -124,16 +128,13 @@
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
       });
 
-    sizeInput.addEventListener("change", () => {
-      const chosenKey = sizeInput.value.toLowerCase();
-      const variant = variantMap[chosenKey];
+    variantSelect.addEventListener("change", () => {
+      selectedVariantId = variantSelect.value;
+      const variant = variantMap[selectedVariantId];
       if (variant) {
-        selectedVariantId = variant.id;
         basePrice = variant.price;
-        productImage.src = variant.image;
+        document.getElementById("productImage").src = variant.image;
         updatePriceDisplay();
-      } else {
-        document.getElementById("result").innerText = "❌ Selected variant not available.";
       }
     });
 
@@ -147,9 +148,8 @@
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
         city: document.getElementById("city").value,
-        size: sizeInput.value,
-        quantity: quantityInput.value,
-        variant_id: selectedVariantId || "UNKNOWN"
+        variant_id: selectedVariantId,
+        quantity: quantityInput.value
       };
 
       const params = new URLSearchParams(payload);
