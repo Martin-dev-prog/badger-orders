@@ -11,10 +11,41 @@ PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
 }
 
-@app.route("/")
-def home():
-    return jsonify({"message": "🎉 Backend is online"})
 
+    return jsonify({
+        "✅ Flask API is running": True,
+        "Available Routes": {
+            "/test-api": "🔧 Check Printful API connection",
+            "/get-product-details/<product_id>": "📦 Get full details for one product",
+            "/get-product-ids": "📋 Get list of all product IDs (and names)",
+            "/submit-order": "🛒 Submit order (POST JSON)",
+            "/debug-env": "🧪 Debug API token"
+        },
+        "Examples": {
+            "Test API": "/test-api",
+            "Product Details": "/get-product-details/386786171",
+            "Product List": "/get-product-ids",
+            "Order Submission": {
+                "Method": "POST",
+                "URL": "/submit-order",
+                "Body Format": {
+                    "recipient": {
+                        "name": "John Doe",
+                        "address1": "123 Main St",
+                        "city": "London",
+                        "zip": "W1A 1AA",
+                        "country_code": "GB"
+                    },
+                    "items": [
+                        {
+                            "variant_id": 1234,
+                            "quantity": 1
+                        }
+                    ]
+                }
+            }
+        }
+    })
 @app.route("/get-product-details/<int:product_id>")
 def get_product_details(product_id):
     try:
