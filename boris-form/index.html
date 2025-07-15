@@ -23,6 +23,7 @@
       width: 100%;
       padding: 10px;
       margin-top: 10px;
+      box-sizing: border-box;
     }
     img {
       width: 300px;
@@ -46,18 +47,8 @@
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
-    <select id="size" required>
-      <option value="">Select Size</option>
-      <option value="S">Small</option>
-      <option value="M" selected>Medium</option>
-      <option value="L">Large</option>
-      <option value="XL">Extra Large</option>
-    </select>
-    <select id="quantity" required>
-      <option value="1" selected>1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-    </select>
+    <select id="size" style="display:none;"></select>
+    <input type="number" id="quantity" placeholder="Quantity" value="1" min="1" required />
     <button type="submit">Buy this product</button>
   </form>
 
@@ -73,33 +64,21 @@
       return;
     }
 
-    let variantMap = {};
     let selectedVariantId = null;
-    let basePrice = 19.95;
-
-    const sizeInput = document.getElementById("size");
+    let basePrice = 0;
+    const sizeSelect = document.getElementById("size");
     const quantityInput = document.getElementById("quantity");
 
     function updatePriceDisplay() {
-      const qty = parseInt(quantityInput.value);
+      const qty = parseInt(quantityInput.value) || 1;
       const total = (basePrice * qty).toFixed(2);
       document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
     }
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(async res => {
-        const contentType = res.headers.get("content-type");
-        const text = await res.text();
-
-        if (!res.ok || !contentType.includes("application/json")) {
-          document.getElementById("productName").innerText = "Merchant Services Offline";
-          document.getElementById("result").innerHTML = `<p style="color:red; font-weight:bold;">❌ Store is currently offline.</p>`;
-          return;
-        }
-
-        const data = JSON.parse(text);
+      .then(res => res.json())
+      .then(data => {
         const result = data?.result?.result || data?.result;
-
         if (!result || !result.sync_product) {
           document.getElementById("result").innerText = "❌ Product not found.";
           return;
@@ -107,67 +86,70 @@
 
         const product = result.sync_product;
         const variants = result.sync_variants || [];
+        const variantMap = {};
 
-        if (variants.length > 0) {
-          for (let variant of variants) {
-            const sizeLabel = variant.size || "M";
-            variantMap[sizeLabel.toUpperCase()] = {
-              id: variant.variant_id,
-              price: parseFloat(variant.retail_price),
-              image: variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url
-            };
-          }
-
-          const defaultVariant = variantMap["M"] || {
-            id: variants[0].variant_id,
-            price: parseFloat(variants[0].retail_price) || 19.95,
-            image: variants[0].files?.[0]?.preview_url || product.thumbnail_url
-          };
-
-          selectedVariantId = defaultVariant.id;
-          basePrice = defaultVariant.price;
-          document.getElementById("productImage").src = defaultVariant.image;
-        } else {
-          selectedVariantId = product.id;
-          basePrice = 19.95;
-          document.getElementById("productImage").src = product.thumbnail_url || "";
+        // Set product image
+        let imageUrl = product.thumbnail_url || "";
+        if (variants.length === 1 && variants[0].files?.length > 0) {
+          imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
         }
+        document.getElementById("productImage").src = imageUrl;
 
         document.getElementById("productName").innerText = product.name;
+
+        if (variants.length > 1) {
+          sizeSelect.style.display = "block";
+          sizeSelect.innerHTML = '<option value="">Select Size</option>';
+          for (const variant of variants) {
+            const size = variant.size || "M";
+            variantMap[size.toUpperCase()] = {
+              id: variant.variant_id,
+              price: parseFloat(variant.retail_price),
+              image: variant.files?.find(f => f.type === "preview")?.preview_url || imageUrl
+            };
+            sizeSelect.innerHTML += `<option value="${size.toUpperCase()}">${size}</option>`;
+          }
+
+          sizeSelect.addEventListener("change", () => {
+            const chosen = sizeSelect.value;
+            if (variantMap[chosen]) {
+              selectedVariantId = variantMap[chosen].id;
+              basePrice = variantMap[chosen].price;
+              document.getElementById("productImage").src = variantMap[chosen].image;
+              updatePriceDisplay();
+            }
+          });
+        } else {
+          selectedVariantId = variants[0]?.variant_id || "UNKNOWN";
+          basePrice = parseFloat(variants[0]?.retail_price || "5.50");
+        }
+
         updatePriceDisplay();
       })
       .catch(err => {
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
       });
 
-    sizeInput.addEventListener("change", () => {
-      const chosenSize = sizeInput.value.toUpperCase();
-      const variant = variantMap[chosenSize];
-      if (variant) {
-        selectedVariantId = variant.id;
-        basePrice = variant.price;
-        document.getElementById("productImage").src = variant.image;
-        updatePriceDisplay();
-      }
-    });
-
     quantityInput.addEventListener("change", updatePriceDisplay);
 
     document.getElementById("orderForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
-      const params = new URLSearchParams({
-        variant_id: selectedVariantId,
-        qty: quantityInput.value,
+      const payload = {
         name: document.getElementById("name").value,
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
-        city: document.getElementById("city").value
-      });
+        city: document.getElementById("city").value,
+        size: sizeSelect.value || "N/A",
+        quantity: quantityInput.value,
+        variant_id: selectedVariantId || "UNKNOWN"
+      };
 
+      const params = new URLSearchParams(payload);
       window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
     });
   });
 </script>
+
 </body>
 </html>
