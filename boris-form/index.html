@@ -46,8 +46,12 @@
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
     
-    <select id="variantSelect" required>
-      <option value="">Select Variant</option>
+    <select id="sizeSelect">
+      <option value="">Select Size</option>
+    </select>
+    
+    <select id="colorSelect">
+      <option value="">Select Colour</option>
     </select>
     
     <select id="quantity" required>
@@ -55,7 +59,7 @@
       <option value="2">2</option>
       <option value="3">3</option>
     </select>
-
+    
     <button type="submit">Buy this product</button>
   </form>
 
@@ -71,12 +75,13 @@
       throw new Error("No product ID in URL");
     }
 
+    const sizeSelect = document.getElementById("sizeSelect");
+    const colorSelect = document.getElementById("colorSelect");
+    const quantityInput = document.getElementById("quantity");
+
     let variantMap = {};
     let selectedVariantId = null;
-    let basePrice = 19.95;
-
-    const variantSelect = document.getElementById("variantSelect");
-    const quantityInput = document.getElementById("quantity");
+    let basePrice = 0;
 
     function updatePriceDisplay() {
       const qty = parseInt(quantityInput.value);
@@ -84,79 +89,24 @@
       document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
     }
 
+    function updateImage(variant) {
+      const preview = variant?.files?.find(f => f.type === "preview")?.preview_url;
+      if (preview) {
+        document.getElementById("productImage").src = preview;
+      }
+    }
+
+    function populateDropdown(select, values) {
+      select.innerHTML = '<option value="">Select</option>';
+      [...new Set(values)].forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        select.appendChild(opt);
+      });
+    }
+
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
       .then(res => res.json())
       .then(data => {
-        const result = data?.result?.result || data?.result;
-
-        if (!result || !result.sync_product) {
-          document.getElementById("result").innerText = "❌ Product not found.";
-          return;
-        }
-
-        const product = result.sync_product;
-        const variants = result.sync_variants || [];
-
-        // Populate variant dropdown
-        variants.forEach(variant => {
-          const label = variant.size || variant.color || `Variant ${variant.variant_id}`;
-          variantMap[variant.variant_id] = {
-            label,
-            price: parseFloat(variant.retail_price),
-            image: variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url
-          };
-
-          const option = document.createElement("option");
-          option.value = variant.variant_id;
-          option.text = label;
-          variantSelect.appendChild(option);
-        });
-
-        // Set default selection
-        const firstVariant = variants[0];
-        if (firstVariant) {
-          variantSelect.value = firstVariant.variant_id;
-          selectedVariantId = firstVariant.variant_id;
-          basePrice = parseFloat(firstVariant.retail_price);
-          document.getElementById("productImage").src = variantMap[selectedVariantId].image;
-        }
-
-        document.getElementById("productName").innerText = product.name;
-        updatePriceDisplay();
-      })
-      .catch(err => {
-        document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
-      });
-
-    variantSelect.addEventListener("change", () => {
-      selectedVariantId = variantSelect.value;
-      const variant = variantMap[selectedVariantId];
-      if (variant) {
-        basePrice = variant.price;
-        document.getElementById("productImage").src = variant.image;
-        updatePriceDisplay();
-      }
-    });
-
-    quantityInput.addEventListener("change", updatePriceDisplay);
-
-    document.getElementById("orderForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const payload = {
-        name: document.getElementById("name").value,
-        email: document.getElementById("email").value,
-        address: document.getElementById("address").value,
-        city: document.getElementById("city").value,
-        variant_id: selectedVariantId,
-        quantity: quantityInput.value
-      };
-
-      const params = new URLSearchParams(payload);
-      window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
-    });
-  });
-</script>
-
-</body>
-</html>
+        const re
