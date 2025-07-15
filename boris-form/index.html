@@ -75,29 +75,33 @@
   }
 
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error(`Product not found (HTTP ${res.status})`);
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data.result && data.result.sync_product) {
-        const product = data.result.sync_product;
-        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
+  .then(res => {
+    const contentType = res.headers.get("content-type") || "";
+    if (!res.ok) {
+      throw new Error(`Product not found (HTTP ${res.status})`);
+    }
+    if (!contentType.includes("application/json")) {
+      throw new Error(`Expected JSON but got ${contentType}`);
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data.result && data.result.sync_product) {
+      const product = data.result.sync_product;
+      const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
 
-        document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productName").innerText = product.name;
-      } else {
-        document.getElementById("productName").innerText = "Unknown product";
-        document.getElementById("result").innerText = "Product data was not in the expected format.";
-      }
-    })
-    .catch(err => {
-      document.getElementById("productImage").style.display = "none";
-      document.getElementById("productName").innerText = "Error loading product";
-      document.getElementById("result").innerHTML = `<span style="color:red;">${err.message}</span>`;
-    });
+      document.getElementById("productImage").src = imageUrl;
+      document.getElementById("productName").innerText = product.name;
+    } else {
+      document.getElementById("productName").innerText = "Unknown product";
+      document.getElementById("result").innerText = "Product data was not in the expected format.";
+    }
+  })
+  .catch(err => {
+    document.getElementById("productImage").style.display = "none";
+    document.getElementById("productName").innerText = "Error loading product";
+    document.getElementById("result").innerHTML = `<span style="color:red;">${err.message}</span>`;
+  });
 
   document.getElementById("orderForm").addEventListener("submit", function(e) {
     e.preventDefault();
