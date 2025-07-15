@@ -11,75 +11,44 @@ PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
 }
 
-
+@app.route("/")
+def index():
     return jsonify({
         "✅ Flask API is running": True,
-        "Available Routes": {
-            "/test-api": "🔧 Check Printful API connection",
-            "/get-product-details/<product_id>": "📦 Get full details for one product",
-            "/get-product-ids": "📋 Get list of all product IDs (and names)",
-            "/submit-order": "🛒 Submit order (POST JSON)",
-            "/debug-env": "🧪 Debug API token"
-        },
-        "Examples": {
-            "Test API": "/test-api",
-            "Product Details": "/get-product-details/386786171",
-            "Product List": "/get-product-ids",
-            "Order Submission": {
-                "Method": "POST",
-                "URL": "/submit-order",
-                "Body Format": {
-                    "recipient": {
-                        "name": "John Doe",
-                        "address1": "123 Main St",
-                        "city": "London",
-                        "zip": "W1A 1AA",
-                        "country_code": "GB"
-                    },
-                    "items": [
-                        {
-                            "variant_id": 1234,
-                            "quantity": 1
-                        }
-                    ]
-                }
-            }
+        "Routes": {
+            "/test-api": "🔧 Check connection to Printful API",
+            "/get-product-details/<product_id>": "📦 Get details of a specific Printful product",
+            "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
+            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded"
         }
     })
-@app.route("/get-product-details/<int:product_id>")
+
+@app.route("/test-api")
+def test_api():
+    response = requests.get("https://api.printful.com/store/products", headers=PRINTFUL_HEADERS)
+    return jsonify(response.json()), response.status_code
+
+@app.route("/get-product-details/<product_id>")
 def get_product_details(product_id):
-    try:
-        url = f"https://api.printful.com/store/products/{product_id}"
-        response = requests.get(url, headers=PRINTFUL_HEADERS)
-
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch product"}), response.status_code
-
-        product_data = response.json()
-
-        # Optionally, fetch variant details too
-        variant_url = f"https://api.printful.com/store/products/{product_id}/sync-variants"
-        variant_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
-
-        if variant_response.status_code == 200:
-            product_data["result"]["sync_variants"] = variant_response.json().get("result", [])
-
-        return jsonify({"result": product_data["result"]})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    url = f"https://api.printful.com/store/products/{product_id}"
+    response = requests.get(url, headers=PRINTFUL_HEADERS)
+    return jsonify(response.json()), response.status_code
 
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
-    data = request.get_json()
-    print("🛒 Order received:", data)
+    data = request.json
+    response = requests.post(
+        "https://api.printful.com/orders",
+        headers=PRINTFUL_HEADERS,
+        json=data
+    )
+    return jsonify(response.json()), response.status_code
 
-    required_fields = ["name", "email", "address", "city", "size", "quantity", "variant_id"]
-    missing = [field for field in required_fields if field not in data]
-    if missing:
-        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
-
-    # You can add logic here to send order to Printful using /orders endpoint
-    return jsonify({"message": "✅ Order submitted successfully"})
+@app.route("/debug-env")
+def debug_env():
+    return jsonify({
+        "PRINTFUL_API_KEY exists": bool(PRINTFUL_API_KEY)
+    })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=10000)
