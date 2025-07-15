@@ -64,11 +64,13 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // Read product ID from URL query string
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
 
+    // Show error and stop if no product ID
     if (!productId) {
-      document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
+      document.body.innerHTML = "<p style='color:red; font-weight:bold;'>❌ Error: No product ID provided in URL.</p>";
       return;
     }
 
@@ -85,14 +87,10 @@
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`, {timeout: 7000})
       .then(res => {
-        console.log("Fetch response:", res);
         if (!res.ok) throw new Error("Network response was not OK");
         return res.json();
       })
       .then(data => {
-        debugger; // Pause here if devtools are open, inspect 'data'
-        console.log("Parsed JSON data:", data);
-
         const result = data?.result?.result || data?.result;
         if (!result || !result.sync_product) {
           document.getElementById("result").innerText = "❌ Product not found.";
@@ -162,7 +160,7 @@
       };
 
       const params = new URLSearchParams(payload);
-      params.set('id', productId);  // <-- Added product ID here
+      params.set('id', productId);  // ensure product ID included on redirect
       window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
     });
   });
