@@ -75,7 +75,12 @@
   }
 
   fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Product not found (HTTP ${res.status})`);
+      }
+      return res.json();
+    })
     .then(data => {
       if (data.result && data.result.sync_product) {
         const product = data.result.sync_product;
@@ -84,11 +89,14 @@
         document.getElementById("productImage").src = imageUrl;
         document.getElementById("productName").innerText = product.name;
       } else {
-        document.getElementById("result").innerText = "Product not found.";
+        document.getElementById("productName").innerText = "Unknown product";
+        document.getElementById("result").innerText = "Product data was not in the expected format.";
       }
     })
     .catch(err => {
-      document.getElementById("result").innerText = "Failed to load product: " + err.message;
+      document.getElementById("productImage").style.display = "none";
+      document.getElementById("productName").innerText = "Error loading product";
+      document.getElementById("result").innerHTML = `<span style="color:red;">${err.message}</span>`;
     });
 
   document.getElementById("orderForm").addEventListener("submit", function(e) {
