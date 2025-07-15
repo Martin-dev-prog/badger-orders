@@ -1,163 +1,49 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-import os
 import requests
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Load Printful API key from environment
-PRINTFUL_TOKEN = os.getenv("PRINTFUL_API_KEY")
-if not PRINTFUL_TOKEN:
-    raise ValueError("Missing PRINTFUL_API_KEY environment variable")
-
-headers = {
-    "Authorization": f"Bearer {PRINTFUL_TOKEN}"
-}
-
-
-# ✅ Root route: Display available commands
-@app.route("/")
-def root():
-    return jsonify({
-        "✅ Flask API is running": True,
-        "Available Routes": {
-            "/test-api": "🔧 Check Printful API connection",
-            "/get-product-details/<product_id>": "📦 Get full details for one product",
-            "/get-product-ids": "📋 Get list of all product IDs (and names)",
-            "/submit-order": "🛒 Submit order (POST JSON)",
-            "/debug-env": "🧪 Debug API token"
-        },
-        "Examples": {
-            "Test API": "/test-api",
-            "Product Details": "/get-product-details/386786171",
-            "Product List": "/get-product-ids",
-            "Order Submission": {
-                "Method": "POST",
-                "URL": "/submit-order",
-                "Body Format": {
-                    "recipient": {
-                        "name": "John Doe",
-                        "address1": "123 Main St",
-                        "city": "London",
-                        "zip": "W1A 1AA",
-                        "country_code": "GB"
-                    },
-                    "items": [
-                        {
-                            "variant_id": 1234,
-                            "quantity": 1
-                        }
-                    ]
-                }
-            }
-        }
-    })
+PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
 MERCHANT_EMAIL = os.getenv("MERCHANT_EMAIL")
-# ✅ Test Merchnt connection
-@app.before_request
-@app.before_request
-def check_merchant_services():
-    if not MERCHANT_EMAIL:
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Service Offline</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    background-color: #f8f8f8;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                }
-                .box {
-                    background-color: #fff3cd;
-                    border: 1px solid #ffeeba;
-                    color: #856404;
-                    padding: 20px 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                    text-align: center;
-                    max-width: 400px;
-                }
-                .box h2 {
-                    margin-top: 0;
-                    font-size: 20px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="box">
-                <h2>⚠️ Merchant Services Offline</h2>
-                <p>Please try again later. Payment provider is not configured.</p>
-            </div>
-        </body>
-        </html>
-        """
-        return Response(html, status=503, mimetype='text/html')
-        
-# ✅ Test Printful API connection
+
+if not PRINTFUL_API_KEY or not MERCHANT_EMAIL:
+    raise EnvironmentError("❌ Missing required environment variables.")
+
+@app.route("/")
+def home():
+    return jsonify({"message": "✅ Printful Order API is running."})
+
 @app.route("/test-api")
 def test_api():
-    url = "https://api.printful.com/store/products"
-    r = requests.get(url, headers=headers)
-    return jsonify({
-        "status_code": r.status_code,
-        "result": r.json() if r.status_code == 200 else r.text
-    })
+    headers = {"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
+    res = requests.get("https://api.printful.com/store/products", headers=headers)
+    return jsonify(res.json())
 
-# ✅ Get product details by ID
 @app.route("/get-product-details/<int:product_id>")
 def get_product_details(product_id):
-    url = f"https://api.printful.com/store/products/{product_id}"
-    r = requests.get(url, headers=headers)
-    return jsonify({
-        "status_code": r.status_code,
-        "result": r.json() if r.status_code == 200 else r.text
-    })
+    headers = {"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
+    res = requests.get(f"https://api.printful.com/store/products/{product_id}", headers=headers)
 
-# ✅ Get all product IDs (driver route you mentioned)
-@app.route("/get-product-ids")
-def get_product_ids():
-    url = "https://api.printful.com/store/products"
-    all_products = []
-    offset = 0
-    limit = 20  # Adjust if you know Printful allows more per page
+    if res.status_code != 200:
+        return jsonify({"error": "❌ Product not found"}), 404
 
-    while True:
-        paged_url = f"{url}?limit={limit}&offset={offset}"
-        r = requests.get(paged_url, headers=headers)
-        if r.status_code != 200:
-            return jsonify({"error": "Failed to fetch product list", "status_code": r.status_code})
-        data = r.json()
-        products = data.get("result", [])
-        all_products.extend(products)
+    return jsonify({"result": res.json()})
 
-        if len(products) < limit:
-            break  # No more pages
-        offset += limit
-
-    ids = [{"id": p["id"], "name": p["name"]} for p in all_products]
-    return jsonify(ids)
-# ✅ Submit Order
-@app.post("/submit-order")
-    async def submit_order(request: Request):
-    data = await request.json()
+@app.route("/submit-order", methods=["POST"])
+def submit_order():
+    data = request.get_json()
     print("🛒 Order received:", data)
-    return {"message": "✅ Order submitted successfully"}
+    
+    # Optional: Forward order via email, save to file/db, or call Printful's order endpoint here
 
-@app.route("/debug-env")
-def debug_env():
-    return jsonify({
-        "token_found": bool(PRINTFUL_TOKEN),
-        "starts_with": PRINTFUL_TOKEN[:8] + "..." if PRINTFUL_TOKEN else "None",
-        "length": len(PRINTFUL_TOKEN) if PRINTFUL_TOKEN else 0
-    })
+    return jsonify({"message": "✅ Order submitted successfully"})
 
-# ✅ Required to run Flask on Render
+@app.route("/index.html")
+def redirect_index():
+    return Response("This is a placeholder for your index.html if needed.", mimetype='text/html')
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True)
