@@ -79,9 +79,8 @@
   fetch(endpoint)
     .then(async res => {
       const contentType = res.headers.get("content-type") || "";
-      const raw = await res.text(); // Always read as text first
+      const raw = await res.text();
 
-      // 🟥 Show visible service offline error for HTML 503 page
       if (!res.ok || !contentType.includes("application/json")) {
         document.getElementById("productImage").style.display = "none";
         document.getElementById("productName").innerText = "Merchant Services Offline";
@@ -93,13 +92,11 @@
         return;
       }
 
-      // ✅ Safe to parse now
       const data = JSON.parse(raw);
 
       if (data.result && data.result.sync_product) {
         const product = data.result.sync_product;
         const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
-
         document.getElementById("productImage").src = imageUrl;
         document.getElementById("productName").innerText = product.name;
       } else {
@@ -139,8 +136,5 @@
     });
   });
 </script>
-
-
-
 </body>
 </html>
