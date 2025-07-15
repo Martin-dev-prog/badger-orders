@@ -17,7 +17,7 @@ def index():
         "✅ Flask API is running": True,
         "Routes": {
             "/test-api": "🔧 Check connection to Printful API",
-            "/get-product-details/<product_id>": "📦 Get details of a specific Printful product",
+            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product",
             "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
             "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded"
         }
