@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
@@ -7,43 +7,48 @@ app = Flask(__name__)
 CORS(app)
 
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
-MERCHANT_EMAIL = os.getenv("MERCHANT_EMAIL")
-
-if not PRINTFUL_API_KEY or not MERCHANT_EMAIL:
-    raise EnvironmentError("❌ Missing required environment variables.")
+PRINTFUL_HEADERS = {
+    "Authorization": f"Bearer {PRINTFUL_API_KEY}"
+}
 
 @app.route("/")
 def home():
-    return jsonify({"message": "✅ Printful Order API is running."})
-
-@app.route("/test-api")
-def test_api():
-    headers = {"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
-    res = requests.get("https://api.printful.com/store/products", headers=headers)
-    return jsonify(res.json())
+    return jsonify({"message": "🎉 Backend is online"})
 
 @app.route("/get-product-details/<int:product_id>")
 def get_product_details(product_id):
-    headers = {"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
-    res = requests.get(f"https://api.printful.com/store/products/{product_id}", headers=headers)
+    try:
+        url = f"https://api.printful.com/store/products/{product_id}"
+        response = requests.get(url, headers=PRINTFUL_HEADERS)
 
-    if res.status_code != 200:
-        return jsonify({"error": "❌ Product not found"}), 404
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch product"}), response.status_code
 
-    return jsonify({"result": res.json()})
+        product_data = response.json()
+
+        # Optionally, fetch variant details too
+        variant_url = f"https://api.printful.com/store/products/{product_id}/sync-variants"
+        variant_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+
+        if variant_response.status_code == 200:
+            product_data["result"]["sync_variants"] = variant_response.json().get("result", [])
+
+        return jsonify({"result": product_data["result"]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.get_json()
     print("🛒 Order received:", data)
-    
-    # Optional: Forward order via email, save to file/db, or call Printful's order endpoint here
 
+    required_fields = ["name", "email", "address", "city", "size", "quantity", "variant_id"]
+    missing = [field for field in required_fields if field not in data]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+
+    # You can add logic here to send order to Printful using /orders endpoint
     return jsonify({"message": "✅ Order submitted successfully"})
 
-@app.route("/index.html")
-def redirect_index():
-    return Response("This is a placeholder for your index.html if needed.", mimetype='text/html')
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000)
