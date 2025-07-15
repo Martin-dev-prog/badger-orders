@@ -3,6 +3,14 @@
 This is a lightweight Python Flask API for submitting print-on-demand orders (e.g. T-shirts) to the [Printful API](https://www.printful.com/docs), built for use with a custom front-end such as a WordPress HTML form.
 
 ---
+✅ What we have:
+A GitHub-hosted front-end (HTML form)
+
+A Render backend that pulls product data from Printful
+
+A product ID system working via query strings
+
+A merchant service check (email env var test) for readiness
 
 ## 🔧 Features
 
