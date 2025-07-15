@@ -12,6 +12,29 @@ A product ID system working via query strings
 
 A merchant service check (email env var test) for readiness
 
+✅ Merchant Services Display What's Being Ordered
+A Product name Variant Size
+
+email
+
+address
+
+Quantity
+
+Price (calculated per unit × quantity)
+
+Show image preview
+
+2. 💳 Display Payment Options
+A secure PayPal button
+
+A secure Stripe card input
+
+One must be completed before order submission
+
+3. 📦 Only After Payment Success
+Create Printful order via /submit-order
+
 ## 🔧 Features
 
 - Accepts JSON POST requests at `/submit-order`
