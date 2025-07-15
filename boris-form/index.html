@@ -76,48 +76,46 @@
 
   const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
 
-  const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
+  fetch(endpoint)
+    .then(async res => {
+      const contentType = res.headers.get("content-type") || "";
+      const raw = await res.text(); // Always read as text first
 
-fetch(endpoint)
-  .then(async res => {
-    const contentType = res.headers.get("content-type") || "";
-    const raw = await res.text();
+      // 🟥 Show visible service offline error for HTML 503 page
+      if (!res.ok || !contentType.includes("application/json")) {
+        document.getElementById("productImage").style.display = "none";
+        document.getElementById("productName").innerText = "Merchant Services Offline";
+        document.getElementById("result").innerHTML = `
+          <p style="color:red; font-weight:bold;">
+            The store is currently offline. Please try again later.
+          </p>`;
+        console.error("Service error:", raw);
+        return;
+      }
 
-    if (!res.ok || !contentType.includes("application/json")) {
-      // Show clear user-friendly message
-      document.getElementById("productImage").style.display = "none";
-      document.getElementById("productName").innerText = "Merchant Services Offline";
-      document.getElementById("result").innerHTML = `
-        <p style="color:red;">The store is currently unavailable. Please try again later.</p>
-      `;
-      throw new Error(`Service offline or invalid content: ${res.status}\n${raw}`);
-    }
+      // ✅ Safe to parse now
+      const data = JSON.parse(raw);
 
-    const data = JSON.parse(raw);
+      if (data.result && data.result.sync_product) {
+        const product = data.result.sync_product;
+        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
 
-    if (data.result && data.result.sync_product) {
-      const product = data.result.sync_product;
-      const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
-      document.getElementById("productImage").src = imageUrl;
-      document.getElementById("productName").innerText = product.name;
-    } else {
-      document.getElementById("productName").innerText = "Unknown product";
-      document.getElementById("result").innerText = "Unexpected response format.";
-    }
-  })
-  .catch(err => {
-    console.error("Fetch error:", err.message);
-    // Already displayed above — no need to double-print
-  });
-
+        document.getElementById("productImage").src = imageUrl;
+        document.getElementById("productName").innerText = product.name;
+      } else {
+        document.getElementById("productName").innerText = "Unknown product";
+        document.getElementById("result").innerText = "Unexpected product format.";
+      }
+    })
     .catch(err => {
       document.getElementById("productImage").style.display = "none";
-      document.getElementById("productName").innerText = "Error loading product";
-      document.getElementById("result").innerHTML = `<span style="color:red; white-space: pre-wrap;">${err.message}</span>`;
-      console.error("Full fetch error:", err);
+      document.getElementById("productName").innerText = "Error";
+      document.getElementById("result").innerHTML = `
+        <p style="color:red;">Failed to load product: ${err.message}</p>`;
+      console.error("Fetch failed:", err);
     });
 
-  document.getElementById("orderForm").addEventListener("submit", function(e) {
+  document.getElementById("orderForm").addEventListener("submit", function (e) {
     e.preventDefault();
     const data = {
       name: document.getElementById("name").value,
@@ -141,5 +139,8 @@ fetch(endpoint)
     });
   });
 </script>
+
+
+
 </body>
 </html>
