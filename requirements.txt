@@ -1,1 +1,3 @@
-hi
+flask
+requests
+flask-cors
