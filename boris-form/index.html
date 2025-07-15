@@ -84,6 +84,10 @@
     }
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`, {timeout: 7000})
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not OK");
+         return res.json();
+       })
       .then(res => res.json())
       .then(data => {
         const result = data?.result?.result || data?.result;
