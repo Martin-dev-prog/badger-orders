@@ -76,31 +76,40 @@
 
   const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
 
-  fetch(endpoint)
-    .then(async (res) => {
-      const contentType = res.headers.get("content-type") || "";
-      const raw = await res.text();
+  const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
 
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: ${raw}`);
-      }
+fetch(endpoint)
+  .then(async res => {
+    const contentType = res.headers.get("content-type") || "";
+    const raw = await res.text();
 
-      if (!contentType.includes("application/json")) {
-        throw new Error(`Expected JSON, got: ${contentType}. Body was:\n${raw}`);
-      }
+    if (!res.ok || !contentType.includes("application/json")) {
+      // Show clear user-friendly message
+      document.getElementById("productImage").style.display = "none";
+      document.getElementById("productName").innerText = "Merchant Services Offline";
+      document.getElementById("result").innerHTML = `
+        <p style="color:red;">The store is currently unavailable. Please try again later.</p>
+      `;
+      throw new Error(`Service offline or invalid content: ${res.status}\n${raw}`);
+    }
 
-      const data = JSON.parse(raw);
+    const data = JSON.parse(raw);
 
-      if (data.result && data.result.sync_product) {
-        const product = data.result.sync_product;
-        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
-        document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productName").innerText = product.name;
-      } else {
-        document.getElementById("productName").innerText = "Unknown product";
-        document.getElementById("result").innerText = "Unexpected data format.";
-      }
-    })
+    if (data.result && data.result.sync_product) {
+      const product = data.result.sync_product;
+      const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
+      document.getElementById("productImage").src = imageUrl;
+      document.getElementById("productName").innerText = product.name;
+    } else {
+      document.getElementById("productName").innerText = "Unknown product";
+      document.getElementById("result").innerText = "Unexpected response format.";
+    }
+  })
+  .catch(err => {
+    console.error("Fetch error:", err.message);
+    // Already displayed above — no need to double-print
+  });
+
     .catch(err => {
       document.getElementById("productImage").style.display = "none";
       document.getElementById("productName").innerText = "Error loading product";
