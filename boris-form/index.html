@@ -152,18 +152,17 @@
         variant_id: selectedVariantId || "UNKNOWN"
       };
 
-      fetch("https://badger-orders.onrender.com/submit-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-        .then(res => res.json())
-        .then(json => {
-          document.getElementById("result").innerText = json.message || "Thank you for your order and support!";
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "Error: " + err.message;
-        });
+     const params = new URLSearchParams({
+     variant_id: selectedVariantId,
+     qty: quantityInput.value,
+     name: document.getElementById("name").value,
+     email: document.getElementById("email").value,
+    address: document.getElementById("address").value,
+     city: document.getElementById("city").value
+    });
+
+    window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
+
     });
   });
 </script>
