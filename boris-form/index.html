@@ -1,32 +1,64 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Buy Your Mug – Badgers of Bunger Hill</title>
+  <title>Order – Badgers of Bunger Hill</title>
   <style>
-    body { font-family: Arial; text-align: center; background: #f4f4f4; padding: 30px; }
-    form { background: #fff; padding: 20px; display: inline-block; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
-    input, textarea, select, button { display: block; width: 100%; margin-top: 10px; padding: 10px; }
-    img { width: 300px; margin-bottom: 15px; }
-    #result { margin-top: 20px; color: green; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
+      text-align: center;
+    }
+    form {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    img {
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
   </style>
 </head>
 <body>
 
-  <img id="productImage" src="" alt="Product Image">
+  <img id="productImage" src="" alt="Product Image" />
   <h2 id="productName">Loading...</h2>
-  <p id="productPrice"><strong>Price:</strong> £19.95 (includes VAT)</p>
+  <p id="productPrice"><strong>Price:</strong> Loading...</p>
 
   <form id="orderForm">
     <input type="text" id="name" placeholder="Your Name" required />
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
-    <select id="quantity">
-      <option value="1">1</option>
-      <option value="2">2</option>
+    <select id="size" required>
+      <option value="">Select Size</option>
+      <option value="S">Small</option>
+      <option value="M" selected>Medium</option>
+      <option value="L">Large</option>
+      <option value="XL">Extra Large</option>
     </select>
-    <button type="submit">Buy This Mug</button>
+    <select id="quantity" required>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+    <button type="submit">Buy this product</button>
   </form>
 
   <div id="result"></div>
@@ -37,41 +69,105 @@
     const productId = urlParams.get('id');
 
     if (!productId) {
-      document.body.innerHTML = "<p style='color:red;'>❌ No product ID in URL.</p>";
+      document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
       return;
     }
 
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        const result = data?.result?.result || data?.result;
-        const product = result?.sync_product;
-        const variant = result?.sync_variants?.[0];
+    let variantMap = {};
+    let selectedVariantId = null;
+    let basePrice = 19.95;
 
-        const imageUrl = product?.thumbnail_url || variant?.files?.[0]?.preview_url || "";
-        document.getElementById("productImage").src = imageUrl;
-        document.getElementById("productName").innerText = product?.name || "Unnamed Product";
+    const sizeInput = document.getElementById("size");
+    const quantityInput = document.getElementById("quantity");
+
+    function updatePriceDisplay() {
+      const qty = parseInt(quantityInput.value);
+      const total = (basePrice * qty).toFixed(2);
+      document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
+    }
+
+    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+      .then(async res => {
+        const contentType = res.headers.get("content-type");
+        const text = await res.text();
+
+        if (!res.ok || !contentType.includes("application/json")) {
+          document.getElementById("productName").innerText = "Merchant Services Offline";
+          document.getElementById("result").innerHTML = `<p style="color:red; font-weight:bold;">❌ Store is currently offline.</p>`;
+          return;
+        }
+
+        const data = JSON.parse(text);
+        const result = data?.result?.result || data?.result;
+
+        if (!result || !result.sync_product) {
+          document.getElementById("result").innerText = "❌ Product not found.";
+          return;
+        }
+
+        const product = result.sync_product;
+        const variants = result.sync_variants || [];
+
+        if (variants.length > 0) {
+          for (let variant of variants) {
+            const sizeLabel = variant.size || "M";
+            variantMap[sizeLabel.toUpperCase()] = {
+              id: variant.variant_id,
+              price: parseFloat(variant.retail_price),
+              image: variant.files?.find(f => f.type === "preview")?.preview_url || product.thumbnail_url
+            };
+          }
+
+          const defaultVariant = variantMap["M"] || {
+            id: variants[0].variant_id,
+            price: parseFloat(variants[0].retail_price) || 19.95,
+            image: variants[0].files?.[0]?.preview_url || product.thumbnail_url
+          };
+
+          selectedVariantId = defaultVariant.id;
+          basePrice = defaultVariant.price;
+          document.getElementById("productImage").src = defaultVariant.image;
+        } else {
+          selectedVariantId = product.id;
+          basePrice = 19.95;
+          document.getElementById("productImage").src = product.thumbnail_url || "";
+        }
+
+        document.getElementById("productName").innerText = product.name;
+        updatePriceDisplay();
       })
       .catch(err => {
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
       });
 
+    sizeInput.addEventListener("change", () => {
+      const chosenSize = sizeInput.value.toUpperCase();
+      const variant = variantMap[chosenSize];
+      if (variant) {
+        selectedVariantId = variant.id;
+        basePrice = variant.price;
+        document.getElementById("productImage").src = variant.image;
+        updatePriceDisplay();
+      }
+    });
+
+    quantityInput.addEventListener("change", updatePriceDisplay);
+
     document.getElementById("orderForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
       const params = new URLSearchParams({
-        product_id: productId,
+        variant_id: selectedVariantId,
+        qty: quantityInput.value,
         name: document.getElementById("name").value,
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
-        city: document.getElementById("city").value,
-        qty: document.getElementById("quantity").value
+        city: document.getElementById("city").value
       });
 
       window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
     });
   });
 </script>
-
 </body>
 </html>
