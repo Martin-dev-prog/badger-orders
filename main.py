@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 import os
@@ -12,7 +12,7 @@ PRINTFUL_HEADERS = {
 }
 
 @app.route("/")
-def index():
+def api_index():
     return jsonify({
         "✅ Flask API is running": True,
         "Routes": {
@@ -34,7 +34,6 @@ def get_product_details(product_id):
     response = requests.get(url, headers=PRINTFUL_HEADERS)
     return jsonify(response.json()), response.status_code
 
-# ✅ Get all product IDs (driver route you mentioned)
 @app.route("/get-product-ids")
 def get_product_ids():
     url = "https://api.printful.com/store/products"
@@ -72,6 +71,25 @@ def debug_env():
     return jsonify({
         "PRINTFUL_API_KEY exists": bool(PRINTFUL_API_KEY)
     })
+
+# -- Static file serving routes added below --
+
+@app.route('/index.html')
+def serve_index_html():
+    return send_from_directory('static', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static_files(filename):
+    return send_from_directory('static', filename)
+
+# Optional: serve root '/' to index.html
+@app.route('/home')
+@app.route('/app')
+@app.route('/dashboard')
+@app.route('/')
+def serve_root():
+    return send_from_directory('static', 'index.html')
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
