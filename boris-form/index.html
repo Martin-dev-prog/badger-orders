@@ -1,14 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Order – Boris Mug</title>
+  <meta charset="UTF-8">
+  <title>Order – Badgers of Bunger Hill</title>
   <style>
-    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
-    form { display: inline-block; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc; max-width: 400px; }
-    input, textarea, select, button { width: 100%; padding: 10px; margin-top: 10px; }
-    img { width: 250px; margin-bottom: 20px; }
-    #result { margin-top: 20px; font-weight: bold; color: green; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
+      text-align: center;
+    }
+    form {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    img {
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
   </style>
 </head>
 <body>
@@ -25,6 +48,7 @@
     <select id="quantity" required>
       <option value="1" selected>1</option>
       <option value="2">2</option>
+      <option value="3">3</option>
     </select>
     <button type="submit">Buy this product</button>
   </form>
@@ -32,57 +56,63 @@
   <div id="result"></div>
 
   <script>
-    const productId = new URLSearchParams(window.location.search).get("id");
+    document.addEventListener("DOMContentLoaded", function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
 
-    if (!productId) {
-      document.body.innerHTML = "<p style='color:red;'>❌ No product ID in URL</p>";
-      throw new Error("Missing product ID");
-    }
+      if (!productId) {
+        document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
+        return;
+      }
 
-    let selectedVariantId = null;
-    let price = 0;
+      let selectedVariantId = null;
+      let basePrice = 0;
 
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        const result = data.result?.result;
-        if (!result) throw new Error("Bad API structure");
+      fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+        .then(res => res.json())
+        .then(data => {
+          const result = data.result.result;
+          const product = result.sync_product;
+          const variant = result.sync_variants[0];
 
-        const product = result.sync_product;
-        const variant = result.sync_variants[0];
+          selectedVariantId = variant.variant_id;
+          basePrice = parseFloat(variant.retail_price);
 
-        if (!variant) throw new Error("No variant found");
+          const imageUrl =
+            variant?.files?.find(f => f.type === "preview")?.preview_url ||
+            product.thumbnail_url || "";
 
-        const previewImage =
-          variant.files.find(f => f.type === "preview")?.preview_url ||
-          product.thumbnail_url || "";
+          document.getElementById("productImage").src = imageUrl;
+          document.getElementById("productName").innerText = product.name;
+          const qty = parseInt(document.getElementById("quantity").value);
+          document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${(basePrice * qty).toFixed(2)}`;
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
+        });
 
-        selectedVariantId = variant.variant_id;
-        price = parseFloat(variant.retail_price);
-
-        document.getElementById("productImage").src = previewImage;
-        document.getElementById("productName").innerText = product.name;
-        document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${price.toFixed(2)}`;
-      })
-      .catch(err => {
-        document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
+      document.getElementById("quantity").addEventListener("change", () => {
+        const qty = parseInt(document.getElementById("quantity").value);
+        document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${(basePrice * qty).toFixed(2)}`;
       });
 
-    document.getElementById("orderForm").addEventListener("submit", function (e) {
-      e.preventDefault();
+      document.getElementById("orderForm").addEventListener("submit", function (e) {
+        e.preventDefault();
 
-      const payload = {
-        name: document.getElementById("name").value,
-        email: document.getElementById("email").value,
-        address: document.getElementById("address").value,
-        city: document.getElementById("city").value,
-        quantity: document.getElementById("quantity").value,
-        variant_id: selectedVariantId
-      };
+        const payload = {
+          name: document.getElementById("name").value,
+          email: document.getElementById("email").value,
+          address: document.getElementById("address").value,
+          city: document.getElementById("city").value,
+          quantity: document.getElementById("quantity").value,
+          variant_id: selectedVariantId
+        };
 
-      fetch("https://badger-orders.onrender.com/submit-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-        .then(res => res.json
+        const params = new URLSearchParams(payload);
+        window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
+      });
+    });
+  </script>
+
+</body>
+</html>
