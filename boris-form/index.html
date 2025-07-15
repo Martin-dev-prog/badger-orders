@@ -45,196 +45,58 @@
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required></textarea>
     <input type="text" id="city" placeholder="City" required />
-    
-    <select id="sizeSelect" required>
+    <select id="size" required>
       <option value="">Select Size</option>
+      <option value="S">Small</option>
+      <option value="M" selected>Medium</option>
+      <option value="L">Large</option>
+      <option value="XL">Extra Large</option>
     </select>
-    
-    <select id="colorSelect" required>
-      <option value="">Select Colour</option>
-    </select>
-    
     <select id="quantity" required>
       <option value="1" selected>1</option>
       <option value="2">2</option>
       <option value="3">3</option>
     </select>
-    
     <button type="submit">Buy this product</button>
   </form>
 
   <div id="result"></div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
 
-    if (!productId) {
-      document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
-      throw new Error("No product ID in URL");
-    }
+  if (!productId) {
+    document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID in URL");
+  }
 
-    const sizeSelect = document.getElementById("sizeSelect");
-    const colorSelect = document.getElementById("colorSelect");
-    const quantityInput = document.getElementById("quantity");
-    const productImage = document.getElementById("productImage");
-    const productName = document.getElementById("productName");
-    const productPrice = document.getElementById("productPrice");
-    const resultDiv = document.getElementById("result");
+  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+    .then(res => res.json())
+    .then(data => {
+      const result = data?.result?.result || data?.result;
 
-    let variants = [];
-    let selectedVariant = null;
-
-    function updatePriceDisplay() {
-      const qty = parseInt(quantityInput.value, 10) || 1;
-      if (selectedVariant && selectedVariant.retail_price) {
-        const basePrice = parseFloat(selectedVariant.retail_price);
-        const total = (basePrice * qty).toFixed(2);
-        productPrice.innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
-      }
-    }
-
-    function updateImage() {
-      if (selectedVariant && selectedVariant.files) {
-        // Find preview image file
-        const previewFile = selectedVariant.files.find(f => f.type === "preview" || f.type === "default");
-        if (previewFile && previewFile.preview_url) {
-          productImage.src = previewFile.preview_url;
-          productImage.alt = productName.textContent;
-        }
-      }
-    }
-
-    function findVariant(size, color) {
-      return variants.find(v => {
-        const attrs = v.options || [];
-        const sizeMatch = attrs.some(o => o.name.toLowerCase() === "size" && o.value === size);
-        const colorMatch = attrs.some(o => o.name.toLowerCase() === "color" && o.value === color);
-        return sizeMatch && colorMatch;
-      });
-    }
-
-    function populateDropdown(selectElement, values) {
-      const uniqueVals = [...new Set(values)].filter(v => v);
-      selectElement.innerHTML = '<option value="">Select</option>';
-      uniqueVals.forEach(val => {
-        const option = document.createElement("option");
-        option.value = val;
-        option.textContent = val;
-        selectElement.appendChild(option);
-      });
-    }
-
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.result) throw new Error("Product data missing 'result'");
-
-        const product = data.result;
-        productName.textContent = product.name;
-
-        variants = product.variants || [];
-        if (!variants.length) throw new Error("No variants found");
-
-        // Gather all sizes and colors from variants options
-        let sizes = [];
-        let colors = [];
-
-        variants.forEach(v => {
-          v.options.forEach(opt => {
-            if (opt.name.toLowerCase() === "size") sizes.push(opt.value);
-            else if (opt.name.toLowerCase() === "color") colors.push(opt.value);
-          });
-        });
-
-        populateDropdown(sizeSelect, sizes);
-        populateDropdown(colorSelect, colors);
-
-        // Set initial selection to first variant
-        selectedVariant = variants[0];
-        updatePriceDisplay();
-        updateImage();
-      })
-      .catch(err => {
-        productName.textContent = "Failed to load product.";
-        productPrice.textContent = "";
-        console.error(err);
-      });
-
-    function onSelectionChange() {
-      const size = sizeSelect.value;
-      const color = colorSelect.value;
-
-      if (!size || !color) {
-        productPrice.innerHTML = "<strong>Price:</strong> Please select size and colour";
-        productImage.src = "";
+      if (!result || !result.sync_product) {
+        document.getElementById("result").innerText = "❌ Product not found.";
         return;
       }
 
-      const variant = findVariant(size, color);
-      if (!variant) {
-        productPrice.innerHTML = "<strong>Price:</strong> Variant not found";
-        productImage.src = "";
-        selectedVariant = null;
-      } else {
-        selectedVariant = variant;
-        updatePriceDisplay();
-        updateImage();
-      }
-    }
+      const product = result.sync_product;
+      const variant = result.sync_variants?.[0];
 
-    sizeSelect.addEventListener("change", onSelectionChange);
-    colorSelect.addEventListener("change", onSelectionChange);
-    quantityInput.addEventListener("input", updatePriceDisplay);
+      // Image: try thumbnail, fallback to variant image
+      const imageUrl =
+        product.thumbnail_url ||
+        variant?.files?.find(f => f.type === "preview")?.preview_url ||
+        "";
 
-    document.getElementById("orderForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-
-      if (!selectedVariant) {
-        alert("Please select valid size and colour");
-        return;
-      }
-
-      const orderData = {
-        recipient: {
-          name: document.getElementById("name").value,
-          address1: document.getElementById("address").value,
-          city: document.getElementById("city").value,
-          email: document.getElementById("email").value,
-          country_code: "GB"
-        },
-        items: [{
-          variant_id: selectedVariant.id,
-          quantity: parseInt(quantityInput.value, 10) || 1
-        }]
-      };
-
-      resultDiv.textContent = "Submitting order...";
-
-      fetch("https://badger-orders.onrender.com/submit-order", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(orderData)
-      })
-      .then(res => res.json())
-      .then(resp => {
-        if (resp.code === 200 || resp.result) {
-          resultDiv.style.color = "green";
-          resultDiv.textContent = "Order submitted successfully!";
-        } else {
-          resultDiv.style.color = "red";
-          resultDiv.textContent = "Order submission failed.";
-          console.error("Order error:", resp);
-        }
-      })
-      .catch(err => {
-        resultDiv.style.color = "red";
-        resultDiv.textContent = "Order submission failed.";
-        console.error(err);
-      });
+      document.getElementById("productImage").src = imageUrl || "";
+      document.getElementById("productName").innerText = product.name || "Unnamed Product";
+      document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
     });
-  });
 </script>
 
 </body>
