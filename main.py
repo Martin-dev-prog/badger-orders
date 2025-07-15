@@ -53,7 +53,6 @@ def get_product_ids():
         products = data.get("result", [])
         all_products.extend(products)
     return jsonify({"result": res.json()})
-
         if len(products) < limit:
             break  # No more pages
         offset += limit
