@@ -85,10 +85,14 @@
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`, {timeout: 7000})
       .then(res => {
+        console.log("Fetch response:", res);
         if (!res.ok) throw new Error("Network response was not OK");
         return res.json();
       })
       .then(data => {
+        debugger; // Pause here if devtools are open, inspect 'data'
+        console.log("Parsed JSON data:", data);
+
         const result = data?.result?.result || data?.result;
         if (!result || !result.sync_product) {
           document.getElementById("result").innerText = "❌ Product not found.";
@@ -138,6 +142,7 @@
         updatePriceDisplay();
       })
       .catch(err => {
+        console.error("Fetch error:", err);
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
       });
 
