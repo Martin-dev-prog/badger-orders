@@ -1,159 +1,158 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Badger Orders – Checkout</title>
+  <title>Order – Badgers of Bunger Hill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 40px;
+      background: #f8f8f8;
+      padding: 20px;
       text-align: center;
     }
-    .container {
+    form {
+      display: inline-block;
+      padding: 20px;
       background: white;
-      padding: 30px;
-      max-width: 500px;
-      margin: auto;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    img {
-      width: 300px;
-      margin-bottom: 20px;
+      max-width: 100%;
+      width: 380px;
     }
     input, select, textarea, button {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
     }
-    #paymentOptions {
-      margin-top: 20px;
-    }
-    #submitBtn {
-      background-color: #4CAF50;
-      color: white;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    #submitBtn:disabled {
-      background-color: grey;
-      cursor: not-allowed;
+    img {
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 20px;
     }
     #result {
       margin-top: 20px;
       font-weight: bold;
-      color: red;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img id="productImage" src="" alt="Product Image" />
-    <h2 id="productName">Loading product...</h2>
-    <p><strong>Variant Code:</strong> <span id="variantId">...</span></p>
-    <p><strong>Price:</strong> £<span id="unitPrice">0.00</span> × <span id="qty">1</span> = £<span id="totalPrice">0.00</span></p>
 
-    <form id="orderForm">
-      <input type="text" id="name" placeholder="Your Name" required />
-      <input type="email" id="email" placeholder="Your Email" required />
-      <textarea id="address" placeholder="Shipping Address" rows="5" required></textarea>
-      <input type="text" id="city" placeholder="City" required />
-      <select id="quantity" required>
-        <option value="1" selected>1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
+  <img id="productImage" src="" alt="Product Image" />
+  <h2 id="productName">Loading product...</h2>
+  <p><strong>Variant Code:</strong> <span id="variantId">...</span></p>
+  <p><strong>Price:</strong> £<span id="unitPrice">0.00</span> × <span id="qty">1</span> = £<span id="totalPrice">0.00</span></p>
 
-      <div id="paymentOptions">
-        <h3>Payment</h3>
-        <button type="button" onclick="simulatePaymentSuccess()">Simulate PayPal</button>
-        <p><em>(Stripe card input can go here)</em></p>
-      </div>
+  <form id="orderForm">
+    <input type="text" id="name" placeholder="Your Name" required />
+    <input type="email" id="email" placeholder="Your Email" required />
+    <textarea id="address" placeholder="Shipping Address" required rows="5" style="resize: vertical;"></textarea>
+    <input type="text" id="city" placeholder="City" required />
+    <select id="quantity" required>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+    <button type="submit" id="submitBtn">Buy this product</button>
+  </form>
 
-      <button type="submit" id="submitBtn" disabled>✅ Confirm & Order</button>
-    </form>
+  <div id="result"></div>
 
-    <div id="result"></div>
-  </div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id');
-    const quantitySelect = document.getElementById('quantity');
+  if (!productId) {
+    document.body.innerHTML = "<p style='color:red;'>Error: No product ID provided in URL.</p>";
+    throw new Error("No product ID found");
+  }
 
-    if (!productId) {
-      document.body.innerHTML = '<p style="color:red">❌ Product ID not found in URL.</p>';
-      throw new Error("No product ID");
-    }
+  const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
+  let selectedVariantId = null;
+  let unitPrice = 0;
 
-    let selectedVariantId = null;
-    let unitPrice = 0;
-    let paymentSuccess = false;
+  function updateTotalPrice() {
+    const qty = parseInt(document.getElementById("quantity").value);
+    document.getElementById("qty").innerText = qty;
+    document.getElementById("totalPrice").innerText = (qty * unitPrice).toFixed(2);
+  }
 
-    function updateTotalPrice() {
-      const qty = parseInt(quantitySelect.value);
-      document.getElementById('qty').innerText = qty;
-      document.getElementById('totalPrice').innerText = (unitPrice * qty).toFixed(2);
-    }
+  document.getElementById("quantity").addEventListener("change", updateTotalPrice);
 
-    quantitySelect.addEventListener('change', updateTotalPrice);
+  fetch(endpoint)
+    .then(async res => {
+      const contentType = res.headers.get("content-type") || "";
+      const raw = await res.text();
 
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-      .then(res => res.json())
-      .then(data => {
+      if (!res.ok || !contentType.includes("application/json")) {
+        document.getElementById("productImage").style.display = "none";
+        document.getElementById("productName").innerText = "Merchant Services Offline";
+        document.getElementById("result").innerHTML = `
+          <p style="color:red; font-weight:bold;">
+            The store is currently offline. Please try again later.
+          </p>`;
+        console.error("Service error:", raw);
+        return;
+      }
+
+      const data = JSON.parse(raw);
+      if (
+        data.result && data.result.sync_product &&
+        data.result.sync_variants && data.result.sync_variants.length > 0
+      ) {
         const product = data.result.sync_product;
         const variant = data.result.sync_variants[0];
 
         selectedVariantId = variant.variant_id;
         unitPrice = parseFloat(variant.retail_price);
 
-        document.getElementById('productName').innerText = product.name;
-        document.getElementById('variantId').innerText = selectedVariantId;
-        document.getElementById('unitPrice').innerText = unitPrice.toFixed(2);
-        document.getElementById('totalPrice').innerText = unitPrice.toFixed(2);
-        document.getElementById('productImage').src = variant.files[0].preview_url;
-      })
-      .catch(err => {
-        document.getElementById('result').innerText = '❌ Product not found or API error.';
-      });
-
-    function simulatePaymentSuccess() {
-      paymentSuccess = true;
-      document.getElementById('submitBtn').disabled = false;
-    }
-
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      if (!paymentSuccess) {
-        alert("Please complete payment before submitting.");
-        return;
+        document.getElementById("productImage").src = variant.files?.[0]?.preview_url || "";
+        document.getElementById("productName").innerText = product.name;
+        document.getElementById("variantId").innerText = selectedVariantId;
+        document.getElementById("unitPrice").innerText = unitPrice.toFixed(2);
+        document.getElementById("totalPrice").innerText = unitPrice.toFixed(2);
+      } else {
+        document.getElementById("productName").innerText = "Unknown product";
+        document.getElementById("result").innerText = "Unexpected product format.";
+        console.error("Unexpected structure:", data);
       }
-
-      const payload = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        address: document.getElementById('address').value,
-        city: document.getElementById('city').value,
-        quantity: quantitySelect.value,
-        variant_id: selectedVariantId
-      };
-
-      fetch('https://badger-orders.onrender.com/submit-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('result').innerText = '✅ Order submitted!';
-        })
-        .catch(() => {
-          document.getElementById('result').innerText = '❌ Error submitting order.';
-        });
+    })
+    .catch(err => {
+      document.getElementById("productImage").style.display = "none";
+      document.getElementById("productName").innerText = "Error";
+      document.getElementById("result").innerHTML = `
+        <p style="color:red;">Failed to load product: ${err.message}</p>`;
+      console.error("Fetch failed:", err);
     });
-  </script>
+
+  document.getElementById("orderForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const payload = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      address: document.getElementById("address").value,
+      city: document.getElementById("city").value,
+      quantity: document.getElementById("quantity").value,
+      variant_id: selectedVariantId
+    };
+
+    fetch("https://badger-orders.onrender.com/submit-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(json => {
+      document.getElementById("result").innerText = json.message || "Thank you for your order and support!";
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "Error: " + err.message;
+    });
+  });
+</script>
 </body>
 </html>
+
