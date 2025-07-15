@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,27 +41,21 @@
 <body>
 
   <img id="productImage" src="" alt="Product Image" />
-  <h2 id="productName">Loading...</h2>
-  <p><strong>Price:</strong> £19.95 (includes VAT, excludes shipping)</p>
+  <h2 id="productName">Loading product...</h2>
+  <p><strong>Variant Code:</strong> <span id="variantId">...</span></p>
+  <p><strong>Price:</strong> £<span id="unitPrice">0.00</span> × <span id="qty">1</span> = £<span id="totalPrice">0.00</span></p>
 
   <form id="orderForm">
     <input type="text" id="name" placeholder="Your Name" required />
     <input type="email" id="email" placeholder="Your Email" required />
     <textarea id="address" placeholder="Shipping Address" required rows="5" style="resize: vertical;"></textarea>
     <input type="text" id="city" placeholder="City" required />
-    <select id="size" required>
-      <option value="">Select Size</option>
-      <option value="S">Small</option>
-      <option value="M" selected>Medium</option>
-      <option value="L">Large</option>
-      <option value="XL">Extra Large</option>
-    </select>
     <select id="quantity" required>
       <option value="1" selected>1</option>
       <option value="2">2</option>
       <option value="3">3</option>
     </select>
-    <button type="submit">Buy this product</button>
+    <button type="submit" id="submitBtn">Buy this product</button>
   </form>
 
   <div id="result"></div>
@@ -75,6 +70,16 @@
   }
 
   const endpoint = `https://badger-orders.onrender.com/get-product-details/${productId}`;
+  let selectedVariantId = null;
+  let unitPrice = 0;
+
+  function updateTotalPrice() {
+    const qty = parseInt(document.getElementById("quantity").value);
+    document.getElementById("qty").innerText = qty;
+    document.getElementById("totalPrice").innerText = (qty * unitPrice).toFixed(2);
+  }
+
+  document.getElementById("quantity").addEventListener("change", updateTotalPrice);
 
   fetch(endpoint)
     .then(async res => {
@@ -94,14 +99,22 @@
 
       const data = JSON.parse(raw);
 
-      if (data.result && data.result.sync_product) {
+      if (data.result && data.result.sync_product && data.result.sync_variants?.[0]) {
         const product = data.result.sync_product;
-        const imageUrl = product.thumbnail_url || "https://via.placeholder.com/300";
-        document.getElementById("productImage").src = imageUrl;
+        const variant = data.result.sync_variants[0];
+
+        selectedVariantId = variant.variant_id;
+        unitPrice = parseFloat(variant.retail_price);
+
+        document.getElementById("productImage").src = variant.files?.[0]?.preview_url || "";
         document.getElementById("productName").innerText = product.name;
+        document.getElementById("variantId").innerText = selectedVariantId;
+        document.getElementById("unitPrice").innerText = unitPrice.toFixed(2);
+        document.getElementById("totalPrice").innerText = unitPrice.toFixed(2);
       } else {
         document.getElementById("productName").innerText = "Unknown product";
         document.getElementById("result").innerText = "Unexpected product format.";
+        console.error("Unexpected structure:", data);
       }
     })
     .catch(err => {
@@ -114,18 +127,20 @@
 
   document.getElementById("orderForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    const data = {
+
+    const payload = {
       name: document.getElementById("name").value,
       email: document.getElementById("email").value,
       address: document.getElementById("address").value,
       city: document.getElementById("city").value,
-      size: document.getElementById("size").value,
-      quantity: document.getElementById("quantity").value
+      quantity: document.getElementById("quantity").value,
+      variant_id: selectedVariantId
     };
+
     fetch("https://badger-orders.onrender.com/submit-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(json => {
