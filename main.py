@@ -56,9 +56,49 @@ def root():
 MERCHANT_EMAIL = os.getenv("MERCHANT_EMAIL")
 # ✅ Test Merchnt connection
 @app.before_request
+@app.before_request
 def check_merchant_services():
     if not MERCHANT_EMAIL:
-        return jsonify({"error": "⚠️ No Merchant Services Online"}), 503
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Service Offline</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f8f8f8;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                }
+                .box {
+                    background-color: #fff3cd;
+                    border: 1px solid #ffeeba;
+                    color: #856404;
+                    padding: 20px 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                    text-align: center;
+                    max-width: 400px;
+                }
+                .box h2 {
+                    margin-top: 0;
+                    font-size: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="box">
+                <h2>⚠️ Merchant Services Offline</h2>
+                <p>Please try again later. Payment provider is not configured.</p>
+            </div>
+        </body>
+        </html>
+        """
+        return Response(html, status=503, mimetype='text/html')
         
 # ✅ Test Printful API connection
 @app.route("/test-api")
