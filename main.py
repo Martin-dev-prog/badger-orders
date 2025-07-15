@@ -53,7 +53,13 @@ def root():
             }
         }
     })
-
+MERCHANT_EMAIL = os.getenv("MERCHANT_EMAIL")
+# ✅ Test Merchnt connection
+@app.before_request
+def check_merchant_services():
+    if not MERCHANT_EMAIL:
+        return jsonify({"error": "⚠️ No Merchant Services Online"}), 503
+        
 # ✅ Test Printful API connection
 @app.route("/test-api")
 def test_api():
