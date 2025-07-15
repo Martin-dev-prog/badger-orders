@@ -83,7 +83,7 @@
       document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
     }
 
-    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+    fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`, {timeout: 7000})
       .then(res => res.json())
       .then(data => {
         const result = data?.result?.result || data?.result;
