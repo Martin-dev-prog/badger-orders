@@ -143,7 +143,13 @@ def get_product_ids():
 
     ids = [{"id": p["id"], "name": p["name"]} for p in all_products]
     return jsonify(ids)
-# ✅ Debug env
+# ✅ Submit Order
+@app.post("/submit-order")
+    async def submit_order(request: Request):
+    data = await request.json()
+    print("🛒 Order received:", data)
+    return {"message": "✅ Order submitted successfully"}
+
 @app.route("/debug-env")
 def debug_env():
     return jsonify({
