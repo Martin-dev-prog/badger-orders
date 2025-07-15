@@ -63,8 +63,10 @@
   <div id="result"></div>
 
 <script>
+window.addEventListener("DOMContentLoaded", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
+  let selectedVariantId = null;
 
   if (!productId) {
     document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
@@ -76,28 +78,58 @@
     .then(data => {
       const result = data?.result?.result || data?.result;
 
-      if (!result || !result.sync_product) {
-        document.getElementById("result").innerText = "❌ Product not found.";
+      if (!result || !result.sync_product || !result.sync_variants?.[0]) {
+        document.getElementById("result").innerText = "❌ Product not found or invalid format.";
         return;
       }
 
       const product = result.sync_product;
-      const variant = result.sync_variants?.[0];
+      const variant = result.sync_variants[0];
+      selectedVariantId = variant.variant_id;
 
-      // Image: try thumbnail, fallback to variant image
       const imageUrl =
         product.thumbnail_url ||
-        variant?.files?.find(f => f.type === "preview")?.preview_url ||
+        variant.files?.find(f => f.type === "preview")?.preview_url ||
         "";
 
       document.getElementById("productImage").src = imageUrl || "";
       document.getElementById("productName").innerText = product.name || "Unnamed Product";
-      document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> £19.95 (includes VAT, excludes shipping)";
+      document.getElementById("productPrice").innerHTML =
+        "<strong>Price:</strong> £" + parseFloat(variant.retail_price).toFixed(2) + " (includes VAT, excludes shipping)";
     })
     .catch(err => {
       document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
     });
+
+  document.getElementById("orderForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const payload = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      address: document.getElementById("address").value,
+      city: document.getElementById("city").value,
+      size: document.getElementById("size").value,
+      quantity: document.getElementById("quantity").value,
+      variant_id: selectedVariantId
+    };
+
+    fetch("https://badger-orders.onrender.com/submit-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(json => {
+      document.getElementById("result").innerText = json.message || "✅ Thank you for your order!";
+    })
+    .catch(err => {
+      document.getElementById("result").innerText = "❌ Order failed: " + err.message;
+    });
+  });
+});
 </script>
+
 
 
 
