@@ -162,6 +162,7 @@
       };
 
       const params = new URLSearchParams(payload);
+      params.set('id', productId);  // <-- Added this line
       window.location.href = `https://badger-orders.onrender.com/index.html?${params.toString()}`;
     });
   });
