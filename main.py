@@ -16,7 +16,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
 
-@app.route("/submit-order", methods=["POST"])
+app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
     variant_id = data.get("variant_id")
@@ -30,10 +30,21 @@ def submit_order():
     if not variant_id:
         return jsonify({"error": "Missing variant_id"}), 400
 
-    # Here you might fetch product info from Printful or your backend,
-    # but for demo, let's hardcode or fetch as you prefer
-    # Example fixed price, or implement your product lookup logic
-    unit_price_gbp = 29.00  # Example price in GBP
+    # Fetch variant details from Printful API
+    try:
+        printful_response = requests.get(
+            f"https://api.printful.com/store/variant/{variant_id}",
+            headers={"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
+        )
+        printful_response.raise_for_status()
+        variant_info = printful_response.json().get("result")
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch variant info: {str(e)}"}), 500
+
+    # Extract price and name from variant_info
+    product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
+    variant_name = variant_info.get("name", f"Size {size}")
+    retail_price = variant_info.get("retail_price", 29.00)
 
     try:
         session = stripe.checkout.Session.create(
@@ -43,9 +54,9 @@ def submit_order():
                 "price_data": {
                     "currency": "gbp",
                     "product_data": {
-                        "name": f"Badger Shirt - Size {size}",
+                        "name": f"{product_name} - {variant_name}",
                     },
-                    "unit_amount": int(unit_price_gbp * 100),  # amount in pence
+                    "unit_amount": int(float(retail_price) * 100),  # amount in pence
                 },
                 "quantity": quantity,
             }],
@@ -62,7 +73,7 @@ def submit_order():
         )
         return jsonify({"stripe_link": session.url})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 400
 
 
 
