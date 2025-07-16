@@ -12,6 +12,66 @@ PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
 }
 
+tripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
+
+@app.route("/submit-order", methods=["POST"])
+def submit_order():
+    data = request.json
+    variant_id = data.get("variant_id")
+
+    if not variant_id:
+        return jsonify({"error": "Missing variant_id"}), 400
+
+    # Fetch product info from your backend
+    try:
+        response = requests.get(f"{BACKEND_URL}{variant_id}")
+        response.raise_for_status()
+        product_info = response.json()
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch product info: {str(e)}"}), 500
+
+    try:
+        # Extract product details
+        product_name = product_info.get("name", "Badger Shirt")
+        unit_price = int(float(product_info.get("price", 15.00)) * 100)  # in pence
+        quantity = int(data.get("quantity", 1))
+
+        # Create Stripe checkout session
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "gbp",
+                    "unit_amount": unit_price,
+                    "product_data": {
+                        "name": product_name,
+                        "images": [product_info.get("image_url", "")],
+                    },
+                },
+                "quantity": quantity,
+            }],
+            mode="payment",
+            success_url="https://martinnewbold.co.uk/thanks?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="https://martinnewbold.co.uk/cancelled",
+            metadata={
+                "variant_id": variant_id,
+                "name": data.get("name"),
+                "email": data.get("email"),
+                "address": data.get("address"),
+                "city": data.get("city"),
+                "size": data.get("size"),
+                "quantity": quantity,
+            }
+        )
+
+        # Optionally: send order to Printful here, or only after payment confirmation webhook
+
+        return jsonify({"stripe_link": session.url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/")
@@ -87,60 +147,6 @@ def get_product_ids():
 
     ids = [{"id": p["id"], "name": p["name"]} for p in all_products]
     return jsonify(ids)
-
-@app.route("/submit-order", methods=["POST"])
-def submit_order():
-    data = request.json
-    variant_id = data.get("variant_id")
-
-    if not variant_id:
-        return jsonify({"error": "Missing variant_id"}), 400
-
-    # Fetch product data from your own backend
-    try:
-        response = requests.get(f"{BACKEND_URL}{variant_id}")
-        product_info = response.json()
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch product info: {str(e)}"}), 500
-
-    try:
-        # Extract values
-        product_name = product_info.get("name", "Badger Shirt")
-        unit_price = int(float(product_info.get("price", 15.00)) * 100)  # convert to pence
-        quantity = int(data.get("quantity", 1))
-
-        # Create Stripe checkout session
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "gbp",
-                    "unit_amount": unit_price,
-                    "product_data": {
-                        "name": product_name,
-                        "images": [product_info.get("image_url", "")],
-                    },
-                },
-                "quantity": quantity,
-            }],
-            mode="payment",
-            success_url="https://martinnewbold.co.uk/thanks?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://martinnewbold.co.uk/cancelled",
-            metadata={
-                "variant_id": variant_id,
-                "name": data.get("name"),
-                "email": data.get("email"),
-                "address": data.get("address"),
-                "city": data.get("city"),
-                "size": data.get("size"),
-                "quantity": quantity,
-            }
-        )
-
-        return jsonify({"stripe_link": session.url})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
 
 @app.route("/debug-env")
 def debug_env():
