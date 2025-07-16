@@ -1,44 +1,31 @@
 🦡 Badger Orders – Printful Order API (Flask)
+
+
 This is a lightweight Python Flask API for submitting print-on-demand orders (e.g. T-shirts) to the Printful API, built for use with a custom front-end such as a WordPress HTML form.
 ✅ Key Tools
-Frontend (HTML form/page for merch)
+The current Flask backend script does the following relevant things:
 
-Backend (Python + FastAPI or Flask on Render)
+Defines /submit-order POST route that creates a Stripe Checkout session with the order details (product name, size, quantity, customer info, etc.).
 
-Stripe Checkout (for card/Google Pay payments)
+Returns the Stripe payment session URL to the frontend.
 
-Stripe Webhooks (to trigger order logic)
+Handles a Stripe webhook endpoint /webhook for listening to payment completions (checkout.session.completed). Here you could add code to trigger Printful order fulfillment (currently a TODO).
 
-Printful API (to fulfill merch)
+Has routes to fetch product data from Printful API and serves static frontend files.
 
-Revolut API (to automate transfers later)
+So your backend currently:
+
+Creates a Stripe checkout payment page link on order submit.
+
+Sends that link back to the frontend for redirection.
+
+Listens to webhook events for payment completion but does not yet trigger Printful orders.
+
+Does NOT automatically pay Printful or integrate payment between Stripe and Printful.
+
+You would manually or programmatically place Printful orders in your webhook handler after payment success.
 
 
-
-✅ What we have: A GitHub-hosted front-end (HTML form)
-
-A Render backend that pulls product data from Printful
-
-A product ID system working via query strings
-
-A merchant service check (email env var test) for readiness
-
-✅ Merchant Services Display What's Being Ordered A Product name Variant Size
-
-email
-
-address
-
-Quantity
-
-Price (calculated per unit × quantity)
-
-Show image preview
-
-💳 Display Payment Options A secure PayPal button
-A secure Stripe card input
-
-One must be completed before order submission
 
 📦 Only After Payment Success Create Printful order via /submit-order
 🔧 Features
