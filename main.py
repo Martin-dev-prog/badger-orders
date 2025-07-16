@@ -90,12 +90,43 @@ def get_product_ids():
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
-    response = requests.post(
-        "https://api.printful.com/orders",
-        headers=PRINTFUL_HEADERS,
-        json=data
-    )
-    return jsonify(response.json()), response.status_code
+
+    try:
+        # Get amount and description
+        quantity = int(data.get("quantity", 1))
+        unit_price = 1500  # £15.00 in pence (adjust as needed)
+        total_price = unit_price * quantity
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "gbp",
+                    "unit_amount": unit_price,
+                    "product_data": {
+                        "name": "Badger Shirt – Size " + data.get("size", "M"),
+                    },
+                },
+                "quantity": quantity,
+            }],
+            mode="payment",
+            success_url="https://martinnewbold.co.uk/thanks?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="https://martinnewbold.co.uk/cancelled",
+            metadata={
+                "variant_id": data.get("variant_id", "UNKNOWN"),
+                "name": data.get("name"),
+                "email": data.get("email"),
+                "address": data.get("address"),
+                "city": data.get("city"),
+                "size": data.get("size"),
+                "quantity": data.get("quantity"),
+            }
+        )
+
+        return jsonify({"stripe_link": session.url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 @app.route("/debug-env")
 def debug_env():
