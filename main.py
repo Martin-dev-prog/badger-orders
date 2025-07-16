@@ -11,6 +11,8 @@ PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
 }
 
+REVOLUT_LINK = os.getenv("REVOLUT_LINK")
+
 @app.route("/")
 def api_index():
     return jsonify({
