@@ -12,7 +12,7 @@ PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
 }
 
-tripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
 
