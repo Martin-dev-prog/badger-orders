@@ -15,7 +15,7 @@ PRINTFUL_HEADERS = {
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
-
+destination_linked_acct_  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT_")  # e.g. "https://yourbackend.com/products/"
 app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
@@ -154,8 +154,8 @@ def stripe_webhook():
                 transfer = stripe.Transfer.create(
                     amount=payment_intent['amount_received'],
                     currency=payment_intent['gdp'],
-                    destination='acct_1QJbFSG6uPYgNecxis',  # <-- Replace with your Revolut connected account ID on stripe
-                    transfer_group=payment_intent['badger-orders'],
+                    destination= destination_linked_acct_,  # <-- Replace with your Revolut connected account ID on stripe
+                    transfer_group=payment_intent['badger-orders > Revolut Account'],
                 )
             except Exception as e:
                 # Log or handle the transfer error accordingly
