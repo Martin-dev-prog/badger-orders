@@ -66,13 +66,17 @@
   document.addEventListener("DOMContentLoaded", function () {
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
+    const prefillFields = ["name", "email", "address", "city", "size", "quantity", "variant_id"];
 
-    if (!productId) {
-      document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
-      return;
-    }
+    // Pre-fill inputs if values exist in URL
+    prefillFields.forEach(field => {
+      const input = document.getElementById(field);
+      if (input && urlParams.get(field)) {
+        input.value = decodeURIComponent(urlParams.get(field));
+      }
+    });
 
-    let selectedVariantId = null;
+    let selectedVariantId = urlParams.get("variant_id") || null;
     let basePrice = 0;
     const sizeSelect = document.getElementById("size");
     const quantityInput = document.getElementById("quantity");
@@ -81,6 +85,11 @@
       const qty = parseInt(quantityInput.value) || 1;
       const total = (basePrice * qty).toFixed(2);
       document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
+    }
+
+    if (!productId) {
+      document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
+      return;
     }
 
     fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`, { timeout: 7000 })
@@ -104,7 +113,6 @@
           imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
         }
         document.getElementById("productImage").src = imageUrl;
-
         document.getElementById("productName").innerText = product.name;
 
         if (variants.length > 1) {
@@ -129,6 +137,15 @@
               updatePriceDisplay();
             }
           });
+
+          // If prefilled, simulate selection
+          const preSize = sizeSelect.value;
+          if (variantMap[preSize]) {
+            selectedVariantId = variantMap[preSize].id;
+            basePrice = variantMap[preSize].price;
+            document.getElementById("productImage").src = variantMap[preSize].image;
+          }
+
         } else {
           selectedVariantId = variants[0]?.variant_id || "UNKNOWN";
           basePrice = parseFloat(variants[0]?.retail_price || "5.50");
@@ -178,10 +195,8 @@
         document.getElementById("result").innerText = "❌ Error submitting order: " + error.message;
       }
     });
-
   });
 </script>
-
 
 </body>
 </html>
