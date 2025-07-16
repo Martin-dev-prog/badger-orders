@@ -29,7 +29,29 @@ def api_index():
 def get_revolut_link():
     revolut_link = os.getenv("REVOLUT_LINK", "")
     return {"revolut_link": revolut_link}
+@app.post("/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
 
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError as e:
+        return {"error": "Invalid payload"}
+    except stripe.error.SignatureVerificationError as e:
+        return {"error": "Invalid signature"}
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        item = session['metadata']['item']
+
+        # → PLACE PRINTFUL ORDER HERE
+        # → STORE ORDER INFO IN DB
+        # → FLAG FOR REVOLUT TRANSFER IN 24h
+
+    return {"status": "success"}
 @app.route("/test-api")
 def test_api():
     response = requests.get("https://api.printful.com/store/products", headers=PRINTFUL_HEADERS)
