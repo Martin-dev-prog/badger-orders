@@ -3,9 +3,24 @@ from flask_cors import CORS
 import requests
 import os
 import stripe
-
+from datetime import date
 app = Flask(__name__)
 CORS(app)
+
+daily_spend = 0
+last_reset = date.today()
+
+MAX_DAILY_SPEND = float(os.getenv("MAX_DAILY_SPEND", "100"))
+
+def reset_daily_spend_if_needed():
+    global daily_spend, last_reset
+    today = date.today()
+    if today != last_reset:
+        daily_spend = 0
+        last_reset = today
+
+
+
 
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
 PRINTFUL_HEADERS = {
@@ -17,8 +32,23 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
 destination_linked_acct_  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT_")  # e.g. "https://yourbackend.com/products/"
 
-app.route("/submit-order", methods=["POST"])
+@app.route("/submit-order", methods=["POST"])
 def submit_order():
+    global daily_spend
+
+    reset_daily_spend_if_needed()
+
+    data = request.json
+    quantity = int(data.get("quantity", 1))
+    unit_price = 30.0  # Your unit price here, or fetch dynamically
+
+    order_total = unit_price * quantity
+
+    if daily_spend + order_total > MAX_DAILY_SPEND:
+        return jsonify({"error": "Daily order limit reached. Please try again tomorrow."}), 429
+
+    # Otherwise, proceed with order creation
+    daily_spend += order_total
     data = request.json
     variant_id = data.get("variant_id")
     name = data.get("name")
