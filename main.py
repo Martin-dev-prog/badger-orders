@@ -26,45 +26,13 @@ def submit_order():
 
     # Fetch product info from your backend
     try:
-        response = requests.get(f"{BACKEND_URL}{variant_id}")
+        response = requests.get(f"{BACKEND_URL}/create_checkout_session/?var={variant_id}")
         response.raise_for_status()
         product_info = response.json()
     except Exception as e:
         return jsonify({"error": f"Failed to fetch product info: {str(e)}"}), 500
 
-    try:
-        # Extract product details
-        product_name = product_info.get("name", "Badger Shirt")
-        unit_price = int(float(product_info.get("price", 15.00)) * 100)  # in pence
-        quantity = int(data.get("quantity", 1))
-
-        # Create Stripe checkout session
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "gbp",
-                    "unit_amount": unit_price,
-                    "product_data": {
-                        "name": product_name,
-                        "images": [product_info.get("image_url", "")],
-                    },
-                },
-                "quantity": quantity,
-            }],
-            mode="payment",
-            success_url="https://martinnewbold.co.uk/thanks?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://martinnewbold.co.uk/cancelled",
-            metadata={
-                "variant_id": variant_id,
-                "name": data.get("name"),
-                "email": data.get("email"),
-                "address": data.get("address"),
-                "city": data.get("city"),
-                "size": data.get("size"),
-                "quantity": quantity,
-            }
-        )
+  
 
         # Optionally: send order to Printful here, or only after payment confirmation webhook
 
