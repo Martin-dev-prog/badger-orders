@@ -91,13 +91,25 @@ def get_product_ids():
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
+    variant_id = data.get("variant_id")
+
+    if not variant_id:
+        return jsonify({"error": "Missing variant_id"}), 400
+
+    # Fetch product data from your own backend
+    try:
+        response = requests.get(f"{BACKEND_URL}{variant_id}")
+        product_info = response.json()
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch product info: {str(e)}"}), 500
 
     try:
-        # Get amount and description
+        # Extract values
+        product_name = product_info.get("name", "Badger Shirt")
+        unit_price = int(float(product_info.get("price", 15.00)) * 100)  # convert to pence
         quantity = int(data.get("quantity", 1))
-        unit_price = 1500  # £15.00 in pence (adjust as needed)
-        total_price = unit_price * quantity
 
+        # Create Stripe checkout session
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
@@ -105,7 +117,8 @@ def submit_order():
                     "currency": "gbp",
                     "unit_amount": unit_price,
                     "product_data": {
-                        "name": "Badger Shirt – Size " + data.get("size", "M"),
+                        "name": product_name,
+                        "images": [product_info.get("image_url", "")],
                     },
                 },
                 "quantity": quantity,
@@ -114,13 +127,13 @@ def submit_order():
             success_url="https://martinnewbold.co.uk/thanks?session_id={CHECKOUT_SESSION_ID}",
             cancel_url="https://martinnewbold.co.uk/cancelled",
             metadata={
-                "variant_id": data.get("variant_id", "UNKNOWN"),
+                "variant_id": variant_id,
                 "name": data.get("name"),
                 "email": data.get("email"),
                 "address": data.get("address"),
                 "city": data.get("city"),
                 "size": data.get("size"),
-                "quantity": data.get("quantity"),
+                "quantity": quantity,
             }
         )
 
