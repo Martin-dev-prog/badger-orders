@@ -29,6 +29,7 @@ def api_index():
 def get_revolut_link():
     revolut_link = os.getenv("REVOLUT_LINK", "")
     return {"revolut_link": revolut_link}
+    
 @app.post("/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
