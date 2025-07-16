@@ -20,42 +20,22 @@ BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products
 def submit_order():
     data = request.json
     variant_id = data.get("variant_id")
+    name = data.get("name")
+    email = data.get("email")
+    address = data.get("address")
+    city = data.get("city")
+    quantity = int(data.get("quantity", 1))
+    size = data.get("size", "N/A")
 
     if not variant_id:
         return jsonify({"error": "Missing variant_id"}), 400
 
-    # Fetch product info from your backend
-    try:
-        response = requests.get(f"{BACKEND_URL}/create_checkout_session/?var={variant_id}")
-        response.raise_for_status()
-        product_info = response.json()
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch product info: {str(e)}"}), 500
-
-  
-
-        # Optionally: send order to Printful here, or only after payment confirmation webhook
-
-        return jsonify({"stripe_link": session.url})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route("/create-checkout-session", methods=["POST"])
-def create_checkout_session():
-    data = request.json
-    item_name = data.get("item")
-    amount = data.get("amount")
-    quantity = int(data.get("quantity", 1))
-
-    # Validate input
-    if not item_name or not amount:
-        return jsonify(error="Missing 'item' or 'amount' in request"), 400
+    # Here you might fetch product info from Printful or your backend,
+    # but for demo, let's hardcode or fetch as you prefer
+    # Example fixed price, or implement your product lookup logic
+    unit_price_gbp = 29.00  # Example price in GBP
 
     try:
-        # Convert amount to pence (int)
-        amount_pence = int(float(amount) * 100)
-
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="payment",
@@ -63,25 +43,28 @@ def create_checkout_session():
                 "price_data": {
                     "currency": "gbp",
                     "product_data": {
-                        "name": item_name,
+                        "name": f"Badger Shirt - Size {size}",
                     },
-                    "unit_amount": amount_pence,
+                    "unit_amount": int(unit_price_gbp * 100),  # amount in pence
                 },
                 "quantity": quantity,
             }],
             metadata={
-                "item": item_name,
-                "quantity": quantity
+                "variant_id": variant_id,
+                "name": name,
+                "email": email,
+                "address": address,
+                "city": city,
+                "size": size,
             },
             success_url=os.getenv("SUCCESS_URL", "https://yourdomain.com/success"),
             cancel_url=os.getenv("CANCEL_URL", "https://yourdomain.com/cancel"),
         )
-
-        # Return Stripe checkout URL to frontend
         return jsonify({"stripe_link": session.url})
-
     except Exception as e:
-        return jsonify(error=str(e)), 400
+        return jsonify({"error": str(e)}), 500
+
+
 
 def move_funds_from_stripe():
     try:
