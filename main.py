@@ -25,6 +25,11 @@ def api_index():
         }
     })
 
+@app.route('/api/revolut-link')
+def get_revolut_link():
+    revolut_link = os.getenv("REVOLUT_LINK", "")
+    return {"revolut_link": revolut_link}
+
 @app.route("/test-api")
 def test_api():
     response = requests.get("https://api.printful.com/store/products", headers=PRINTFUL_HEADERS)
