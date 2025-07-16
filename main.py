@@ -31,29 +31,30 @@ def get_revolut_link():
     revolut_link = os.getenv("REVOLUT_LINK", "")
     return {"revolut_link": revolut_link}
     
-@app.post("/webhook")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
+@app.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.data
     sig_header = request.headers.get('stripe-signature')
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # ✅ Make sure this is defined in your env
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
     except ValueError as e:
-        return {"error": "Invalid payload"}
+        return jsonify({"error": "Invalid payload"}), 400
     except stripe.error.SignatureVerificationError as e:
-        return {"error": "Invalid signature"}
+        return jsonify({"error": "Invalid signature"}), 400
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        item = session['metadata']['item']
+        variant_id = session['metadata'].get('variant_id')
+        name = session['metadata'].get('name')
+        email = session['metadata'].get('email')
+        # 🚧 TODO: trigger Printful order, store data, notify user, etc.
 
-        # → PLACE PRINTFUL ORDER HERE
-        # → STORE ORDER INFO IN DB
-        # → FLAG FOR REVOLUT TRANSFER IN 24h
-
-    return {"status": "success"}
+    return jsonify({"status": "success"})
+    
 @app.route("/test-api")
 def test_api():
     response = requests.get("https://api.printful.com/store/products", headers=PRINTFUL_HEADERS)
