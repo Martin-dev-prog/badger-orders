@@ -20,8 +20,6 @@ def reset_daily_spend_if_needed():
         last_reset = today
 
 
-
-
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
 PRINTFUL_HEADERS = {
     "Authorization": f"Bearer {PRINTFUL_API_KEY}"
