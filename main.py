@@ -114,23 +114,42 @@ def get_revolut_link():
 def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get('stripe-signature')
-    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # ✅ Make sure this is defined in your env
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # Make sure this is set in your environment
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
-    except ValueError as e:
+    except ValueError:
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError as e:
+    except stripe.error.SignatureVerificationError:
         return jsonify({"error": "Invalid signature"}), 400
 
+    # Handle checkout.session.completed event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         variant_id = session['metadata'].get('variant_id')
         name = session['metadata'].get('name')
         email = session['metadata'].get('email')
-        # 🚧 TODO: trigger Printful order, store data, notify user, etc.
+        # TODO: trigger Printful order, store data, notify user, etc.
+
+        # Retrieve the PaymentIntent ID from the session to get payment details
+        payment_intent_id = session.get('payment_intent')
+        if payment_intent_id:
+            try:
+                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+                # Create a transfer to the connected Revolut account
+                transfer = stripe.Transfer.create(
+                    amount=payment_intent['amount_received'],
+                    currency=payment_intent['gdp'],
+                    destination='acct_1QJbFSG6uPYgNecxis',  # <-- Replace with your Revolut connected account ID on stripe
+                    transfer_group=payment_intent['badger-orders'],
+                )
+            except Exception as e:
+                # Log or handle the transfer error accordingly
+                print(f"Transfer creation failed: {str(e)}")
+                # You may choose to return an error here or continue gracefully
 
     return jsonify({"status": "success"})
     
