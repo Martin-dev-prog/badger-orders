@@ -72,20 +72,6 @@
 
 <script>
   (async function(){
-    // Fetch Revolut link from backend API and redirect immediately if successful
-    try {
-      const revolutLink = await fetch("https://badger-orders.onrender.com/api/revolut-link")
-        .then(res => res.text());
-
-      if (revolutLink) {
-        window.location.href = revolutLink;
-        return; // Stop further execution after redirect
-      }
-    } catch (err) {
-      console.error("Failed to fetch Revolut link:", err);
-      // If fails, continue loading page normally
-    }
-
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
     const quantitySelect = document.getElementById('quantity');
@@ -137,31 +123,26 @@
       document.getElementById('result').innerText = '❌ Product not found or API error.';
     }
 
-    // Handle form submission
+    // On form submit: redirect to Revolut payment link
     document.getElementById('orderForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      const payload = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        address: document.getElementById('address').value,
-        city: document.getElementById('city').value,
-        quantity: quantitySelect.value,
-        variant_id: selectedVariantId
-      };
-
       try {
-        const orderRes = await fetch('https://badger-orders.onrender.com/submit-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const revolutLink = await fetch("https://badger-orders.onrender.com/api/revolut-link").then(res => res.text());
 
-        if (!orderRes.ok) throw new Error("Order submission failed");
+        if (!revolutLink) {
+          alert("Payment link unavailable, please try later.");
+          return;
+        }
 
-        document.getElementById('result').innerText = '✅ Order submitted successfully! Thank you.';
-      } catch (orderErr) {
-        document.getElementById('result').innerText = '❌ Error submitting order. ' + orderErr.message;
+        // Optionally, you can POST the order details here to your backend before redirecting
+
+        // Redirect user to Revolut payment page
+        window.location.href = revolutLink;
+
+      } catch (err) {
+        alert("Failed to load payment link. Please try again.");
+        console.error(err);
       }
     });
   })();
