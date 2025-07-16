@@ -68,7 +68,6 @@
     const productId = urlParams.get('id');
     const prefillFields = ["name", "email", "address", "city", "size", "quantity", "variant_id"];
 
-    // Pre-fill inputs if values exist in URL
     prefillFields.forEach(field => {
       const input = document.getElementById(field);
       if (input && urlParams.get(field)) {
@@ -112,12 +111,14 @@
         if (variants.length === 1 && variants[0].files?.length > 0) {
           imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
         }
+
         document.getElementById("productImage").src = imageUrl;
         document.getElementById("productName").innerText = product.name;
 
         if (variants.length > 1) {
           sizeSelect.style.display = "block";
           sizeSelect.innerHTML = '<option value="">Select Size</option>';
+
           for (const variant of variants) {
             const size = variant.size || "M";
             variantMap[size.toUpperCase()] = {
@@ -133,25 +134,24 @@
             if (variantMap[chosen]) {
               selectedVariantId = variantMap[chosen].id;
               basePrice = variantMap[chosen].price;
-              document.getElementById("productImage").src = variantMap[chosen].image;
+              document.getElementById("productImage").src = variantMap[chosen].image;  // ✅ image updates here
               updatePriceDisplay();
             }
           });
 
-          // If prefilled, simulate selection
+          // Simulate dropdown selection if size was prefilled
           const preSize = sizeSelect.value;
           if (variantMap[preSize]) {
-            selectedVariantId = variantMap[preSize].id;
-            basePrice = variantMap[preSize].price;
-            document.getElementById("productImage").src = variantMap[preSize].image;
+            sizeSelect.value = preSize;
+            const event = new Event("change");
+            sizeSelect.dispatchEvent(event);
           }
 
         } else {
           selectedVariantId = variants[0]?.variant_id || "UNKNOWN";
           basePrice = parseFloat(variants[0]?.retail_price || "5.50");
+          updatePriceDisplay();
         }
-
-        updatePriceDisplay();
       })
       .catch(err => {
         document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
