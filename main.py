@@ -16,6 +16,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
 destination_linked_acct_  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT_")  # e.g. "https://yourbackend.com/products/"
+
 app.route("/submit-order", methods=["POST"])
 def submit_order():
     data = request.json
