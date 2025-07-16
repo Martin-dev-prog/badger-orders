@@ -76,35 +76,6 @@ def submit_order():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
-
-def move_funds_from_stripe():
-    try:
-        # Retrieve the Stripe balance
-        balance = stripe.Balance.retrieve()
-        available = balance["available"][0]
-        amount = available["amount"] / 100  # Convert from pence to GBP
-        currency = available["currency"].upper()
-
-        print(f"✅ Available in Stripe: £{amount:.2f} {currency}")
-
-        # Optional: trigger payout manually (Stripe usually auto-payouts)
-        # Uncomment below if you want to control payout manually
-        # payout = stripe.Payout.create(
-        #     amount=int(amount * 100),
-        #     currency=currency.lower(),
-        #     method="standard",
-        #     statement_descriptor="Badger Order Payout"
-        # )
-        # print("Payout triggered:", payout)
-
-    except stripe.error.StripeError as e:
-        print(f"❌ Stripe error: {e.user_message}")
-    except Exception as ex:
-        print(f"❌ Unexpected error: {ex}")
-
-if __name__ == "__main__":
-    move_funds_from_stripe()
 @app.route("/")
 def api_index():
     return jsonify({
@@ -122,46 +93,74 @@ def get_revolut_link():
     revolut_link = os.getenv("REVOLUT_LINK", "")
     return {"revolut_link": revolut_link}
     
-@app.route("/webhook", methods=["POST"])
 def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get('stripe-signature')
-    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # Make sure this is set in your environment
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
     except ValueError:
         return jsonify({"error": "Invalid payload"}), 400
     except stripe.error.SignatureVerificationError:
         return jsonify({"error": "Invalid signature"}), 400
 
-    # Handle checkout.session.completed event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        variant_id = session['metadata'].get('variant_id')
-        name = session['metadata'].get('name')
-        email = session['metadata'].get('email')
-        # TODO: trigger Printful order, store data, notify user, etc.
+        metadata = session.get('metadata', {})
+        variant_id = metadata.get('variant_id')
+        name = metadata.get('name')
+        email = metadata.get('email')
+        address = metadata.get('address')
+        city = metadata.get('city')
+        size = metadata.get('size')
+        quantity = int(metadata.get('quantity', 1))
 
-        # Retrieve the PaymentIntent ID from the session to get payment details
         payment_intent_id = session.get('payment_intent')
         if payment_intent_id:
             try:
                 payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
 
-                # Create a transfer to the connected Revolut account
+                # Create transfer to connected Revolut account
                 transfer = stripe.Transfer.create(
                     amount=payment_intent['amount_received'],
-                    currency=payment_intent['gdp'],
-                    destination= destination_linked_acct_,  # <-- Replace with your Revolut connected account ID on stripe
-                    transfer_group=payment_intent['id'],  # payment intent ID string,
+                    currency=payment_intent['currency'],  # fix typo here
+                    destination=os.getenv("DESTINATION_LINKED_ACCT"),  # put your connected acct ID here or env var
+                    transfer_group=payment_intent['id'],
                 )
             except Exception as e:
-                # Log or handle the transfer error accordingly
                 print(f"Transfer creation failed: {str(e)}")
-                # You may choose to return an error here or continue gracefully
+                # You can choose to return or continue here
+
+        # Create Printful order (simplified example)
+        printful_api_key = os.getenv("PRINTFUL_API_KEY")
+        if printful_api_key:
+            printful_order_url = "https://api.printful.com/orders"
+            headers = {
+                "Authorization": f"Bearer {printful_api_key}",
+                "Content-Type": "application/json",
+            }
+            order_payload = {
+                "recipient": {
+                    "name": name,
+                    "address1": address,
+                    "city": city,
+                    "country_code": "GB",  # adjust as needed
+                },
+                "items": [{
+                    "variant_id": int(variant_id),
+                    "quantity": quantity,
+                }],
+                "options": {
+                    "printful": {"store_order_number": payment_intent_id}
+                }
+            }
+            try:
+                response = requests.post(printful_order_url, json=order_payload, headers=headers)
+                response.raise_for_status()
+                print("Printful order created:", response.json())
+            except Exception as e:
+                print(f"Printful order creation failed: {str(e)}")
 
     return jsonify({"status": "success"})
     
