@@ -155,7 +155,7 @@ def stripe_webhook():
                     amount=payment_intent['amount_received'],
                     currency=payment_intent['gdp'],
                     destination= destination_linked_acct_,  # <-- Replace with your Revolut connected account ID on stripe
-                    transfer_group=payment_intent['badger-orders > Revolut Account'],
+                    transfer_group=payment_intent['id'],  # payment intent ID string,
                 )
             except Exception as e:
                 # Log or handle the transfer error accordingly
