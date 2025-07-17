@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
         sizeSelect.disabled = true;
 
         // No variant ID available; set to UNKNOWN or handle accordingly
-        selectedVariantId = "UNKNOWN";
+        selectedVariantId = productId;
 
         // Use fallback price or from product if available
         basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
