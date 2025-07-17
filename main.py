@@ -20,6 +20,30 @@ def reset_daily_spend_if_needed():
         daily_spend = 0
         last_reset = today
 
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+
+def check_password():
+    token = request.args.get("token")
+    if token != ADMIN_PASSWORD:
+        abort(403, description="Unauthorized")
+
+@app.route("/admin/reset-spend", methods=["POST"])
+def reset_spend():
+    check_password()
+    global daily_spend
+    daily_spend = 0
+    return jsonify({"status": "✅ Spend reset to 0"})
+
+@app.route("/admin/set-limit", methods=["POST"])
+def set_limit():
+    check_password()
+    try:
+        new_limit = float(request.json.get("limit"))
+        global MAX_DAILY_SPEND
+        MAX_DAILY_SPEND = new_limit
+        return jsonify({"status": f"✅ MAX_DAILY_SPEND set to {MAX_DAILY_SPEND}"})
+    except Exception as e:
+        return jsonify({"error": f"Invalid limit: {str(e)}"}), 400
 
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
 PRINTFUL_HEADERS = {
