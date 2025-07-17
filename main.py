@@ -71,15 +71,41 @@ def submit_order():
     # Fetch variant details from Printful API for checkout
     #
     try:
+    # Try variant lookup first
+    variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+    printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+
+    if printful_response.status_code == 404:
+        # Fallback: treat as product ID, fetch variants
+        product_url = f"https://api.printful.com/store/products/{variant_id}"
+        product_response = requests.get(product_url, headers=PRINTFUL_HEADERS)
+        product_response.raise_for_status()
+
+        product_data = product_response.json().get("result", {})
+        variants = product_data.get("variants", [])
+
+        if not variants:
+            return jsonify({"error": "No variants found for this product"}), 400
+
+        # Use first variant
+        variant_id = variants[0]["id"]
+
+        # Retry with corrected variant ID
         printful_response = requests.get(
             f"https://api.printful.com/store/variant/{variant_id}",
-            headers={"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
+            headers=PRINTFUL_HEADERS
         )
         printful_response.raise_for_status()
-        variant_info = printful_response.json().get("result")
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch variant info: {str(e)}"}), 500
 
+    else:
+        printful_response.raise_for_status()
+
+    variant_info = printful_response.json().get("result")
+
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+    return jsonify({"error": f"Failed to fetch variant info: {str(e)}"}), 500
     # Extract price and name from variant_info
     product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
     variant_name = variant_info.get("name", f"Size {size}")
