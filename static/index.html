@@ -182,8 +182,11 @@ document.addEventListener("DOMContentLoaded", function () {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error("Order submission failed");
-
+      if (!response.ok) {
+         const errorBody = await response.json();
+         const reason = errorBody?.error || "Order submission failed";
+         throw new Error(reason);
+      } 
       const result = await response.json();
 
       if (result.stripe_link) {
