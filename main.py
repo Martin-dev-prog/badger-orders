@@ -82,6 +82,7 @@ def submit_order():
         address = data.get("address")
         city = data.get("city")
         size = data.get("size", "N/A")
+        product_id = data.get("product_id", "N/A")
 
         if variant_id =="UNKNOWN":
           print(f"📦 Checking  ID: {variant_id}")
