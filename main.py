@@ -31,6 +31,8 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
 destination_linked_acct_  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT_")  # e.g. "https://yourbackend.com/products/"
 
+import traceback
+
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     global daily_spend
@@ -114,7 +116,9 @@ def submit_order():
 
     except Exception as e:
         print("[ERROR] Unexpected error:", str(e))
+        print(traceback.format_exc())  # This shows full traceback in the logs
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
 @app.route("/")
 def api_index():
