@@ -86,30 +86,46 @@ def submit_order():
         if not variant_id:
             return jsonify({"error": "Missing variant_id"}), 400
 
-        # Try variant lookup first
+        # Try to fetch the variant
+        print(f"📦 Checking variant ID: {variant_id}")
         variant_url = f"https://api.printful.com/store/variant/{variant_id}"
         printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
 
         if printful_response.status_code == 404:
-            # Fallback to product lookup
+            print("⚠️ Variant not found. Trying product fallback...")
+
+            # Try as a product ID
             product_url = f"https://api.printful.com/store/products/{variant_id}"
             product_response = requests.get(product_url, headers=PRINTFUL_HEADERS)
-            product_response.raise_for_status()
-            product_data = product_response.json().get("result", {})
-            variants = product_data.get("variants", [])
-            if not variants:
-                return jsonify({"error": "No variants found for this product"}), 400
-            variant_id = variants[0]["id"]
-            printful_response = requests.get(
-                f"https://api.printful.com/store/variant/{variant_id}",
-                headers=PRINTFUL_HEADERS
-            )
-            printful_response.raise_for_status()
+
+            if product_response.status_code == 404:
+                print("⚠️ Product not found either. Fallback to original ID as variant.")
+                # Retry original variant ID one last time
+                variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+                printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+                printful_response.raise_for_status()
+            else:
+                product_data = product_response.json().get("result", {})
+                variants = product_data.get("variants", [])
+
+                if not variants:
+                    print("⚠️ No variants found in product. Fallback to original ID as variant.")
+                    # Retry original ID as variant
+                    variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+                    printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+                    printful_response.raise_for_status()
+                else:
+                    # Use first variant
+                    variant_id = variants[0]["id"]
+                    print(f"✅ Using fallback variant ID: {variant_id}")
+                    variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+                    printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+                    printful_response.raise_for_status()
         else:
             printful_response.raise_for_status()
 
         variant_info = printful_response.json().get("result")
-        product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
+        product_name = variant_info.get("product", {}).get("name", "Unnamed Product")
         variant_name = variant_info.get("name", f"Size {size}")
         retail_price = variant_info.get("retail_price", 29.00)
 
@@ -139,15 +155,14 @@ def submit_order():
             cancel_url=os.getenv("CANCEL_URL", "https://yourdomain.com/cancel"),
         )
 
-        daily_spend += order_total  # Only count spend after successful session creation
+        # Only update spend after successful session creation
+        daily_spend += order_total
         return jsonify({"stripe_link": session.url})
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Failed to submit order: {str(e)}"}), 500
-
-
 
     
 def stripe_webhook():
