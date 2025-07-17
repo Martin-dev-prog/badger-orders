@@ -100,12 +100,12 @@ document.addEventListener("DOMContentLoaded", function () {
       let imageUrl = product.thumbnail_url || "";
       if (variants.length === 1 && variants[0].files?.length > 0) {
         imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
-        selectedVariantId = productId;
+   
       }
       document.getElementById("productImage").src = imageUrl;
       document.getElementById("productName").innerText = product.name;
 
-      if (variants.length === 0) {
+      if (variants.length <= 1) {
         // NO variants — disable size select and prefill size from URL or default
         const sizeFromUrl = urlParams.get("size") || "Default Size";
         sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
