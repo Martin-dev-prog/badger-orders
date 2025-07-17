@@ -33,8 +33,11 @@ destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "
 
 import traceback
 
-@app.route("/submit-order", methods=["POST","GET"])
+@app.route("/submit-order", methods=["POST","GET","OPTIONS"])
 def submit_order():
+    if request.method == "OPTIONS":
+        # CORS preflight handling
+        return '', 204
     if request.method != "POST":
         return jsonify({"error": "This route only accepts POST requests"}), 405
     global daily_spend
