@@ -60,12 +60,12 @@ def api_index():
     return jsonify({
         "✅ Flask API is running": True,
         "Routes": {
-            "/test-api": "🔧 Check connection to Printful API",
-            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product",
-            "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
-            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded",
-            "/admin/set-limit: requires pasword from environment var to set the balance limiit for the linked bak acount on printful",
-            "/admin/reset-spend: sets the defauly balance back  in the syste for deivery of goods cost"
+            "/test-api": "🔧 Check connection to Printful API.",
+            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product.",
+            "/submit-order": "🛒 Submit an order via POST (requires JSON payload).",
+            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded.",
+            "/admin/set-limit": "Requires password from environment var to set the balance limit for the linked bank acount on printful.",
+            "/admin/reset-spend": "Sets the defauly balance back  in the syste for deivery of goods cost."
         }
     })
 
