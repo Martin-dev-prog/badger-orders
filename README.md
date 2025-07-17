@@ -23,6 +23,7 @@ Serves frontend static files to support the user interface.
 --------------------------------------------------------------------------
 
 What the Backend Does Currently:
+
 ✔ Creates a Stripe Checkout payment page link upon order submission.
 
 ✔ Returns this payment link to the frontend for customer redirection.
