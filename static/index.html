@@ -93,47 +93,73 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
-    .then(res => res.json())
-    .then(data => {
-      const result = data?.result?.result || data?.result;
-      if (!result?.sync_product) {
-        document.getElementById("result").innerText = "❌ Product not found.";
-        return;
+ fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
+  .then(res => res.json())
+  .then(data => {
+    const result = data?.result?.result || data?.result;
+    if (!result?.sync_product) {
+      document.getElementById("result").innerText = "❌ Product not found.";
+      return;
+    }
+
+    const product = result.sync_product;
+    const variants = result.sync_variants || [];
+
+    // Set product image (default)
+    let imageUrl = product.thumbnail_url || "";
+    if (variants.length === 1 && variants[0].files?.length > 0) {
+      imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
+    }
+    document.getElementById("productImage").src = imageUrl;
+    document.getElementById("productName").innerText = product.name;
+
+    if (variants.length <= 1) { // Treat 0 or 1 variant the same
+      const sizeFromUrl = urlParams.get("size") || "Default Size";
+      sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
+      sizeSelect.disabled = true;
+
+      selectedVariantId = productId;
+
+      basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
+      updatePriceDisplay();
+    } else {
+      // Variants exist — enable size select and populate options
+      sizeSelect.disabled = false;
+      sizeSelect.innerHTML = '<option value="">Select Size</option>';
+      for (const variant of variants) {
+        const size = variant.size || "M";
+        variantMap[size.toUpperCase()] = {
+          id: variant.variant_id,
+          price: parseFloat(variant.retail_price),
+          image: variant.files?.find(f => f.type === "preview")?.preview_url || imageUrl
+        };
+        sizeSelect.innerHTML += `<option value="${size.toUpperCase()}">${size}</option>`;
       }
 
-      const product = result.sync_product;
-      const variants = result.sync_variants || [];
+      // Handle variant selection changes
+      sizeSelect.addEventListener("change", () => {
+        const selectedSize = sizeSelect.value;
+        if (variantMap[selectedSize]) {
+          const variant = variantMap[selectedSize];
+          selectedVariantId = variant.id;
+          basePrice = variant.price;
+          document.getElementById("productImage").src = variant.image;
+          updatePriceDisplay();
+        }
+      });
 
-      // Set product image (default)
-      let imageUrl = product.thumbnail_url || "";
-      if (variants.length === 1 && variants[0].files?.length > 0) {
-        imageUrl = variants[0].files.find(f => f.type === "preview")?.preview_url || imageUrl;
+      // Auto-select size if prefilled in URL
+      const prefilledSize = urlParams.get("size");
+      if (prefilledSize && variantMap[prefilledSize.toUpperCase()]) {
+        sizeSelect.value = prefilledSize.toUpperCase();
+        const event = new Event("change");
+        sizeSelect.dispatchEvent(event);
       }
-      document.getElementById("productImage").src = imageUrl;
-      document.getElementById("productName").innerText = product.name;
-
-      if (variants.length === 0) {
-        // NO variants — disable size select and prefill size from URL or default
-        const sizeFromUrl = urlParams.get("size") || "Default Size";
-        sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
-        sizeSelect.disabled = true;
-
-        // No variant ID available; set to UNKNOWN or handle accordingly
-        selectedVariantId = productId;
-
-        // Use fallback price or from product if available
-        basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
-        updatePriceDisplay();
-      if (variants.length <= 1) { // Treat 0 or 1 variant the same
-        // Disable size select and set selectedVariantId to productId
-        sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
-        sizeSelect.disabled = true;
-
-        selectedVariantId = productId;
-
-        basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
-        updatePriceDisplay();
+    }
+  })
+  .catch(err => {
+    document.getElementById("result").innerText = "❌ Error loading product: " + err.message;
+  });
 } else {
       } else {
         // Variants exist — enable size select and populate options
