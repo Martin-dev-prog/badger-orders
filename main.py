@@ -121,10 +121,7 @@ def api_index():
         }
     })
 
-@app.route('/api/revolut-link')
-def get_revolut_link():
-    revolut_link = os.getenv("REVOLUT_LINK", "")
-    return {"revolut_link": revolut_link}
+
     
 def stripe_webhook():
     payload = request.data
