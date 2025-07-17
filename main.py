@@ -100,7 +100,6 @@ def submit_order():
                 return jsonify({"error": "Product not found"}), 404
             product_response.raise_for_status()
             product_data = product_response.json().get("result", {})
-
             product_name = product_data.get("name", "Unnamed Product")
             retail_price = float(product_data.get("retail_price", 0.0))
             currency = product_data.get("currency", "GBP")
@@ -109,31 +108,12 @@ def submit_order():
             # Fetch variant info
             variant_url = f"https://api.printful.com/store/variant/{variant_id}"
             variant_response = requests.get(variant_url, headers=headers)
-            if variant_response.status_code == 404:
-                # Try fallback to product variants
-                product_url = f"https://api.printful.com/store/products/{variant_id}"
-                product_response = requests.get(product_url, headers=headers)
-                if product_response.status_code == 404:
-                    return jsonify({"error": "Variant or product not found"}), 404
-                product_response.raise_for_status()
-                product_data = product_response.json().get("result", {})
-                variants = product_data.get("variants", [])
-                if not variants:
-                    return jsonify({"error": "No variants found for product"}), 400
-                # Use first variant
-                variant = variants[0]
-                variant_id = variant.get("id")
-                variant_name = variant.get("name", variant_name)
-                retail_price = float(variant.get("retail_price", retail_price))
-                product_name = product_data.get("name", product_name)
-                currency = product_data.get("currency", currency)
-            else:
-                variant_response.raise_for_status()
-                variant_info = variant_response.json().get("result", {})
-                product_name = variant_info.get("product", {}).get("name", product_name)
-                variant_name = variant_info.get("name", variant_name)
-                retail_price = float(variant_info.get("retail_price", retail_price))
-                currency = "GBP"
+            variant_response.raise_for_status()
+            variant_info = variant_response.json().get("result", {})
+            product_name = variant_info.get("product", {}).get("name", product_name)
+            variant_name = variant_info.get("name", variant_name)
+            retail_price = float(variant_info.get("retail_price", retail_price))
+            currency = "GBP"
 
         # Create Stripe checkout session
         session = stripe.checkout.Session.create(
