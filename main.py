@@ -41,85 +41,63 @@ destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "
 
 import traceback
 
-@app.route("/submit-order", methods=["POST","GET","OPTIONS"])
+@app.route("/submit-order", methods=["POST", "GET", "OPTIONS"])
 def submit_order():
     if request.method == "OPTIONS":
-        # CORS preflight handling
-        return '', 204
+        return '', 204  # CORS preflight
     if request.method != "POST":
         return jsonify({"error": "This route only accepts POST requests"}), 405
-    global daily_spend
 
+    global daily_spend
     reset_daily_spend_if_needed()
 
-    data = request.json
-    quantity = int(data.get("quantity", 1))
-    unit_price = 30.0  # Your unit price here, or fetch dynamically
-
-    order_total = unit_price * quantity
-
-    if daily_spend + order_total > MAX_DAILY_SPEND:
-        return jsonify({"error": "Daily order limit reached. Please try again tomorrow."}), 429
-
-    # Otherwise, proceed with order creation
-    daily_spend += order_total
-    data = request.json
-    variant_id = data.get("variant_id")
-    name = data.get("name")
-    email = data.get("email")
-    address = data.get("address")
-    city = data.get("city")
-    quantity = int(data.get("quantity", 1))
-    size = data.get("size", "N/A")
-
-    if not variant_id:
-        return jsonify({"error": "Missing variant_id"}), 400
-
-    #
-    # Fetch variant details from Printful API for checkout
-    #
     try:
-    # Try variant lookup first
-    variant_url = f"https://api.printful.com/store/variant/{variant_id}"
-    printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+        data = request.json
+        quantity = int(data.get("quantity", 1))
+        unit_price = 30.0
+        order_total = unit_price * quantity
 
-    if printful_response.status_code == 404:
-        # Fallback: treat as product ID, fetch variants
-        product_url = f"https://api.printful.com/store/products/{variant_id}"
-        product_response = requests.get(product_url, headers=PRINTFUL_HEADERS)
-        product_response.raise_for_status()
+        if daily_spend + order_total > MAX_DAILY_SPEND:
+            return jsonify({"error": "Daily order limit reached. Please try again tomorrow."}), 429
 
-        product_data = product_response.json().get("result", {})
-        variants = product_data.get("variants", [])
+        variant_id = data.get("variant_id")
+        name = data.get("name")
+        email = data.get("email")
+        address = data.get("address")
+        city = data.get("city")
+        size = data.get("size", "N/A")
 
-        if not variants:
-            return jsonify({"error": "No variants found for this product"}), 400
+        if not variant_id:
+            return jsonify({"error": "Missing variant_id"}), 400
 
-        # Use first variant
-        variant_id = variants[0]["id"]
+        # Try variant lookup first
+        variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+        printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
 
-        # Retry with corrected variant ID
-        printful_response = requests.get(
-            f"https://api.printful.com/store/variant/{variant_id}",
-            headers=PRINTFUL_HEADERS
-        )
-        printful_response.raise_for_status()
+        if printful_response.status_code == 404:
+            # Fallback to product lookup
+            product_url = f"https://api.printful.com/store/products/{variant_id}"
+            product_response = requests.get(product_url, headers=PRINTFUL_HEADERS)
+            product_response.raise_for_status()
+            product_data = product_response.json().get("result", {})
+            variants = product_data.get("variants", [])
+            if not variants:
+                return jsonify({"error": "No variants found for this product"}), 400
+            variant_id = variants[0]["id"]
+            printful_response = requests.get(
+                f"https://api.printful.com/store/variant/{variant_id}",
+                headers=PRINTFUL_HEADERS
+            )
+            printful_response.raise_for_status()
+        else:
+            printful_response.raise_for_status()
 
-    else:
-        printful_response.raise_for_status()
+        variant_info = printful_response.json().get("result")
+        product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
+        variant_name = variant_info.get("name", f"Size {size}")
+        retail_price = variant_info.get("retail_price", 29.00)
 
-    variant_info = printful_response.json().get("result")
-
-except Exception as e:
-    import traceback
-    traceback.print_exc()
-    return jsonify({"error": f"Failed to fetch variant info: {str(e)}"}), 500
-    # Extract price and name from variant_info
-    product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
-    variant_name = variant_info.get("name", f"Size {size}")
-    retail_price = variant_info.get("retail_price", 29.00)
-
-    try:
+        # Create Stripe checkout session
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="payment",
@@ -129,7 +107,7 @@ except Exception as e:
                     "product_data": {
                         "name": f"{product_name} - {variant_name}",
                     },
-                    "unit_amount": int(float(retail_price) * 100),  # amount in pence
+                    "unit_amount": int(float(retail_price) * 100),
                 },
                 "quantity": quantity,
             }],
@@ -144,23 +122,15 @@ except Exception as e:
             success_url=os.getenv("SUCCESS_URL", "https://yourdomain.com/success"),
             cancel_url=os.getenv("CANCEL_URL", "https://yourdomain.com/cancel"),
         )
+
+        daily_spend += order_total  # Only count spend after successful session creation
         return jsonify({"stripe_link": session.url})
+
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"Failed to open Stripe: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to submit order: {str(e)}"}), 500
 
-@app.route("/")
-def api_index():
-    return jsonify({
-        "✅ Flask API is running": True,
-        "Routes": {
-            "/test-api": "🔧 Check connection to Printful API",
-            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product",
-            "/submit-order": "🛒 Submit an order via POST (requires JSON payload)",
-            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded"
-        }
-    })
 
 
     
