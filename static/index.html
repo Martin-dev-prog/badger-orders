@@ -125,7 +125,16 @@ document.addEventListener("DOMContentLoaded", function () {
         // Use fallback price or from product if available
         basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
         updatePriceDisplay();
+      if (variants.length <= 1) { // Treat 0 or 1 variant the same
+        // Disable size select and set selectedVariantId to productId
+        sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
+        sizeSelect.disabled = true;
 
+        selectedVariantId = productId;
+
+        basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
+        updatePriceDisplay();
+} else {
       } else {
         // Variants exist — enable size select and populate options
         sizeSelect.disabled = false;
