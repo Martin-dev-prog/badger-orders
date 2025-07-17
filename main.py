@@ -34,49 +34,49 @@ destination_linked_acct_  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT_")  # e.g.
 @app.route("/submit-order", methods=["POST"])
 def submit_order():
     global daily_spend
-
     reset_daily_spend_if_needed()
 
     data = request.json
-    quantity = int(data.get("quantity", 1))
-    unit_price = 30.0  # Your unit price here, or fetch dynamically
+    print("[DEBUG] Received data:", data)
 
-    order_total = unit_price * quantity
-
-    if daily_spend + order_total > MAX_DAILY_SPEND:
-        return jsonify({"error": "Daily order limit reached. Please try again tomorrow."}), 429
-
-    # Otherwise, proceed with order creation
-    daily_spend += order_total
-    data = request.json
-    variant_id = data.get("variant_id")
-    name = data.get("name")
-    email = data.get("email")
-    address = data.get("address")
-    city = data.get("city")
-    quantity = int(data.get("quantity", 1))
-    size = data.get("size", "N/A")
-
-    if not variant_id:
-        return jsonify({"error": "Missing variant_id"}), 400
-
-    # Fetch variant details from Printful API
     try:
+        quantity = int(data.get("quantity", 1))
+        print(f"[DEBUG] Quantity: {quantity}")
+        unit_price = 30.0
+        order_total = unit_price * quantity
+
+        if daily_spend + order_total > MAX_DAILY_SPEND:
+            print("[DEBUG] Order exceeds daily spend limit")
+            return jsonify({"error": "Daily order limit reached."}), 429
+
+        daily_spend += order_total
+
+        variant_id = data.get("variant_id")
+        name = data.get("name")
+        email = data.get("email")
+        address = data.get("address")
+        city = data.get("city")
+        size = data.get("size", "N/A")
+
+        if not variant_id:
+            print("[DEBUG] Missing variant_id")
+            return jsonify({"error": "Missing variant_id"}), 400
+
+        print("[DEBUG] Fetching Printful variant info...")
         printful_response = requests.get(
             f"https://api.printful.com/store/variant/{variant_id}",
             headers={"Authorization": f"Bearer {PRINTFUL_API_KEY}"}
         )
+        print(f"[DEBUG] Printful response status: {printful_response.status_code}")
         printful_response.raise_for_status()
+
         variant_info = printful_response.json().get("result")
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch variant info: {str(e)}"}), 500
+        product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
+        variant_name = variant_info.get("name", f"Size {size}")
+        retail_price = variant_info.get("retail_price", 29.00)
+        print(f"[DEBUG] Retail price: {retail_price}")
 
-    # Extract price and name from variant_info
-    product_name = variant_info.get("product", {}).get("name", "Badger Shirt")
-    variant_name = variant_info.get("name", f"Size {size}")
-    retail_price = variant_info.get("retail_price", 29.00)
-
-    try:
+        print("[DEBUG] Creating Stripe checkout session...")
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="payment",
@@ -86,7 +86,7 @@ def submit_order():
                     "product_data": {
                         "name": f"{product_name} - {variant_name}",
                     },
-                    "unit_amount": int(float(retail_price) * 100),  # amount in pence
+                    "unit_amount": int(float(retail_price) * 100),
                 },
                 "quantity": quantity,
             }],
@@ -101,9 +101,20 @@ def submit_order():
             success_url=os.getenv("SUCCESS_URL", "https://yourdomain.com/success"),
             cancel_url=os.getenv("CANCEL_URL", "https://yourdomain.com/cancel"),
         )
+        print("[DEBUG] Stripe session created:", session.url)
         return jsonify({"stripe_link": session.url})
+
+    except requests.RequestException as e:
+        print("[ERROR] Printful API failed:", str(e))
+        return jsonify({"error": f"Printful error: {str(e)}"}), 500
+
+    except stripe.error.StripeError as e:
+        print("[ERROR] Stripe error:", str(e))
+        return jsonify({"error": f"Stripe error: {str(e)}"}), 500
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        print("[ERROR] Unexpected error:", str(e))
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 @app.route("/")
 def api_index():
