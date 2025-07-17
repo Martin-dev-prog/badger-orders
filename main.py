@@ -33,7 +33,7 @@ destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "
 
 import traceback
 
-@app.route("/submit-order")
+@app.route("/submit-order" method: 'POST')
 def submit_order():
     global daily_spend
 
