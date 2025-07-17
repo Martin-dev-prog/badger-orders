@@ -7,6 +7,7 @@ from datetime import date
 app = Flask(__name__)
 CORS(app)
 
+
 daily_spend = 0
 last_reset = date.today()
 
