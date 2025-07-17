@@ -83,13 +83,15 @@ def submit_order():
         city = data.get("city")
         size = data.get("size", "N/A")
 
-        if not variant_id:
-            return jsonify({"error": "Missing variant_id"}), 400
-
-        # Try to fetch the variant
-        print(f"📦 Checking variant ID: {variant_id}")
-        variant_url = f"https://api.printful.com/store/variant/{variant_id}"
-        printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+        if not variant_id ==="UNKNOWN":
+          print(f"📦 Checking  ID: {variant_id}")
+          variant_url =  url = f"https://api.printful.com/store/products/{product_id}"
+          printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+        else:
+          # Try to fetch the variant
+          print(f"📦 Checking variant ID: {variant_id}")
+          variant_url = f"https://api.printful.com/store/variant/{variant_id}"
+          printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
 
         if printful_response.status_code == 404:
             print("⚠️ Variant not found. Trying product fallback...")
