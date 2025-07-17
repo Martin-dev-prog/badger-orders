@@ -69,6 +69,20 @@ Endpoint	Purpose
 /submit-order	Submit an order (accepts JSON POST payload)
 /debug-env	Debug endpoint to check environment variables
 
+
+✅ Now has complete and corrected /submit-order route, with your fallback logic properly embedded — and no steps skipped.
+
+✔You’ll have:
+
+✔CORS and OPTIONS handling
+
+✔Variant + fallback + fallback-to-original-variant retry
+
+✔Stripe checkout logic
+
+✔Proper error handling
+
+
 --------------------------------------------------------------------------
 
 Deployment & Demo
