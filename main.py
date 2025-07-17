@@ -21,6 +21,16 @@ def reset_daily_spend_if_needed():
         last_reset = today
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
+PRINTFUL_HEADERS = {
+    "Authorization": f"Bearer {PRINTFUL_API_KEY}"
+}
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
+destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "https://yourbackend.com/products/"
+
+import traceback
 
 def check_password():
     token = request.args.get("token")
@@ -45,17 +55,6 @@ def set_limit():
     except Exception as e:
         return jsonify({"error": f"Invalid limit: {str(e)}"}), 400
 
-PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
-PRINTFUL_HEADERS = {
-    "Authorization": f"Bearer {PRINTFUL_API_KEY}"
-}
-
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
-BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
-destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "https://yourbackend.com/products/"
-
-import traceback
 
 @app.route("/submit-order", methods=["POST", "GET", "OPTIONS"])
 def submit_order():
