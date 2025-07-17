@@ -114,8 +114,8 @@ document.addEventListener("DOMContentLoaded", function () {
         sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
         sizeSelect.disabled = true;
 
-        // No variant ID available; set to UNKNOWN or handle accordingly
-        selectedVariantId = "UNKNOWN";
+        // No variant ID available; set to original product ID or handle accordingly
+        selectedVariantId = productId;
 
         // Use fallback price or from product if available
         basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
