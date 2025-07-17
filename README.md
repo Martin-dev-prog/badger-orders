@@ -1,5 +1,5 @@
 
--------------------------------------------------------------------------- 
+
 🦡 Badger Orders – Printful Order API (Flask)
 --------------------------------------------------------------------------
 This is a lightweight Python Flask API designed to handle print-on-demand orders (like T-shirts) via the Printful API. It integrates seamlessly with a custom frontend (e.g., a WordPress HTML form).
@@ -19,6 +19,8 @@ Provides routes to fetch product data directly from the Printful API.
 
 ✅ Static File Serving:
 Serves frontend static files to support the user interface.
+
+--------------------------------------------------------------------------
 
 What the Backend Does Currently:
 ✔ Creates a Stripe Checkout payment page link upon order submission.
@@ -43,6 +45,8 @@ PRINTFUL_API_KEY	API key from Printful
 STRIPE_PUBLISHABLE_KEY	Your Stripe publishable key
 STRIPE_SECRET_KEY	Your Stripe secret key (account)
 
+--------------------------------------------------------------------------
+
 ✅ How It Works End-to-End
 ✔ Customer submits an order on the frontend.
 
@@ -62,6 +66,8 @@ Endpoint	Purpose
 /get-product-details/<product_id>	Get details for a specific product
 /submit-order	Submit an order (accepts JSON POST payload)
 /debug-env	Debug endpoint to check environment variables
+
+--------------------------------------------------------------------------
 
 Deployment & Demo
 Ready to deploy on any Python-compatible hosting service such as Render or Replit.
