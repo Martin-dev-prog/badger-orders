@@ -1,4 +1,7 @@
+
+-------------------------------------------------------------------------- 
 🦡 Badger Orders – Printful Order API (Flask)
+--------------------------------------------------------------------------
 This is a lightweight Python Flask API designed to handle print-on-demand orders (like T-shirts) via the Printful API. It integrates seamlessly with a custom frontend (e.g., a WordPress HTML form).
 
 ✅ Key Features
@@ -9,7 +12,7 @@ Defines a /submit-order POST endpoint that creates a Stripe Checkout session wit
 Returns the Stripe payment session URL to the frontend for redirection, enabling smooth payment processing.
 
 ✅ Webhook Listener:
-Implements a /webhook endpoint to listen for Stripe payment completion events (checkout.session.completed). This moves the puchase money to the Link bank account to enable  fuds to purchase Printful order fulfillment can be triggered.
+Implements a /webhook endpoint to listen for Stripe payment completion events (checkout.session.completed). This moves the puchase money to the Link bank account to enable  funds to purchase Printful order fulfillment it required Stripe eent to trigger this webhook on completion of the purchase  othersies n fulfilment of the ordder will take places.
 
 ✅ Product Data Fetching:
 Provides routes to fetch product data directly from the Printful API.
