@@ -83,7 +83,7 @@ def submit_order():
         city = data.get("city")
         size = data.get("size", "N/A")
 
-        if not variant_id ==="UNKNOWN":
+        if variant_id =="UNKNOWN":
           print(f"📦 Checking  ID: {variant_id}")
           variant_url =  url = f"https://api.printful.com/store/products/{product_id}"
           printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
