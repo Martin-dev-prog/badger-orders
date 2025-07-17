@@ -9,7 +9,7 @@ Defines a /submit-order POST endpoint that creates a Stripe Checkout session wit
 Returns the Stripe payment session URL to the frontend for redirection, enabling smooth payment processing.
 
 ✅ Webhook Listener:
-Implements a /webhook endpoint to listen for Stripe payment completion events (checkout.session.completed). This is where Printful order fulfillment can be triggered (currently marked as TODO).
+Implements a /webhook endpoint to listen for Stripe payment completion events (checkout.session.completed). This moves the puchase money to the Link bank account to enable  fuds to purchase Printful order fulfillment can be triggered.
 
 ✅ Product Data Fetching:
 Provides routes to fetch product data directly from the Printful API.
