@@ -87,7 +87,17 @@ def submit_order():
         if variant_id =="UNKNOWN":
           print(f"📦 Checking  ID: {variant_id}")
           variant_url =  url = f"https://api.printful.com/store/products/{product_id}"
-          printful_response = requests.get(variant_url, headers=PRINTFUL_HEADERS)
+          product_response = requests.get(product_url, headers=PRINTFUL_HEADERS)
+          product_response.raise_for_status()
+          product_data = product_response.json().get("result", {})
+
+          # Extract product details directly
+          product_name = product_data.get("name", "Unnamed Product")
+          retail_price = float(product_data.get("retail_price", 0.0))  # Price on the product level
+          currency = product_data.get("currency", "GBP")  # Default currency if not provided
+
+          # Use product_id as variant_id since no variants exist
+          variant_id = product_id
         else:
           # Try to fetch the variant
           print(f"📦 Checking variant ID: {variant_id}")
