@@ -112,7 +112,9 @@ def submit_order():
         )
         return jsonify({"stripe_link": session.url})
     except Exception as e:
-        return jsonify({"error - Failed to open Stripe": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to open Stripe: {str(e)}"}), 500
 
 @app.route("/")
 def api_index():
