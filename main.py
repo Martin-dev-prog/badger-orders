@@ -35,6 +35,8 @@ import traceback
 
 @app.route("/submit-order", methods=["POST,GET"])
 def submit_order():
+    if request.method != "POST":
+        return jsonify({"error": "This route only accepts POST requests"}), 405
     global daily_spend
 
     reset_daily_spend_if_needed()
