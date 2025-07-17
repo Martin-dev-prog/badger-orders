@@ -113,7 +113,7 @@
             sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
             sizeSelect.disabled = true;
 
-            selectedVariantId = productId;
+            selectedVariantId = "UNKNOWN";
 
             basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
             updatePriceDisplay();
