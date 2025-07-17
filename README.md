@@ -49,6 +49,7 @@ STRIPE_SECRET_KEY	Your Stripe secret key (account)
 --------------------------------------------------------------------------
 
 ✅ How It Works End-to-End
+
 ✔ Customer submits an order on the frontend.
 
 ✔ Backend creates a Stripe checkout session and sends the payment URL back.
