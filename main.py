@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+Tfrom flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 import os
@@ -33,7 +33,7 @@ destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "
 
 import traceback
 
-@app.route("/submit-order", methods=["POST"])
+@app.route("/submit-order", methods=["POST,GET"])
 def submit_order():
     global daily_spend
 
