@@ -132,6 +132,13 @@ def init_db():
     conn.commit()
     conn.close()
         
+@app.route('/admin/reset-spend', methods=['POST'])
+@admin_required
+def admin_reset_spend():
+    today = date.today().isoformat()
+    save_daily_state(0.0, today)
+    return jsonify({"message": "Daily spend counter reset to 0."})
+    
 @app.route("/")
 def index():
     return app.send_static_file('index.html')
