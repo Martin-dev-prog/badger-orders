@@ -384,9 +384,10 @@ def submit_order_full():
                 'quantity': qty
             }],
             metadata={
-                'name':       name_var,
+                'name':       product_name ,
                 'size':       size,
                 'quantity':   str(qty),
+                'price':   str(cost_pence),
                 'product_id': data.get('product_id', ''),
                 'variant_id': data.get('variant_id', '')
             },
