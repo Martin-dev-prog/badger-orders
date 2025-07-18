@@ -299,7 +299,7 @@ def submit_order_full():
     raw_cap = os.getenv('MAX_DAILY_SPEND', '100')   # string like "100"
     cap_pounds = Decimal(raw_cap)
     cap_pence   = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
-    if  amount_spent_pence + cost_pence > cap_pence:
+    if  amount + cost_pence > cap_pence:
         return jsonify({'error':'Daily order limit reached'}),429
     session_obj=stripe.checkout.Session.create(
         payment_method_types=['card'], mode='payment',
