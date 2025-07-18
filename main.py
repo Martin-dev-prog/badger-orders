@@ -4,8 +4,12 @@ import os
 import stripe
 from flask_cors import CORS
 from datetime import date
-app = Flask(__name__)
 
+app = Flask(
+    __name__,
+    static_folder='static',    # folder on disk
+    static_url_path=''         # serve at URL path “/”
+)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-default")
 CORS(app)
 from functools import wraps
