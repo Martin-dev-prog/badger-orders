@@ -338,6 +338,9 @@ def get_product_details(product_id):
 @app.route('/submit-order', methods=['POST','OPTIONS'])
 def submit_order_full():
     if request.method=='OPTIONS': return '',204
+    try:
+        # … all your existing code from amount,today … through save_daily_state …
+   
     amount, today = reset_daily_spend_if_needed()
     data=request.json or {}
     qty=int(data.get('quantity',1))
@@ -351,6 +354,16 @@ def submit_order_full():
     cost_pence = unit_cost_pence * qty
     if  amount + cost_pence > cap_pence:
         return jsonify({'error':'Daily order limit reached'}),429
+    except Exception:
+        tb = traceback.format_exc()
+        # Log to your Render logs
+        print(tb)
+        # Return it in the response for now
+        return jsonify({
+            'error': 'Internal Server Error',
+            'traceback': tb
+        }), 500    
+
     session_obj=stripe.checkout.Session.create(
         payment_method_types=['card'], mode='payment',
         line_items=[{
