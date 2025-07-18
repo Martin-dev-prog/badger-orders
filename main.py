@@ -347,7 +347,8 @@ def submit_order_full():
         # Parse input
         data = request.json or {}
         qty  = int(data.get('quantity', 1))
-
+        cost = data.get('base_cost', 1)
+        name = data.get('name_var', 1)
         # Convert unit cost to pence
         from decimal import Decimal, ROUND_HALF_UP
         unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
