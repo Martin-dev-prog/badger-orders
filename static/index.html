@@ -83,6 +83,7 @@
         document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
       }
 
+
       if (!productId) {
         document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
         return;
