@@ -59,7 +59,27 @@ def api_index():
         }
     })
 
+login_form_html = """
+<!doctype html>
+<title>Admin Login</title>
+<h2>Admin Login</h2>
+<form method="post">
+  <input type="password" name="password" placeholder="Enter admin password" required>
+  <button type="submit">Login</button>
+</form>
+{% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+"""
 
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == ADMIN_PASSWORD:
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_dashboard"))
+        else:
+            return render_template_string(login_form_html, error="Incorrect password")
+    return render_template_string(login_form_html)
 @app.route("/admin/dashboard", methods=["GET", "POST"])
 @admin_required
 def admin_dashboard():
