@@ -96,9 +96,15 @@
         .then(data => {
           const result = data?.result?.result || data?.result;
           if (!result?.sync_product) {
+            // Product not found handling
             document.getElementById("productName").innerText = "Product not found.";
             document.getElementById("productPrice").innerHTML = "<strong>Price:</strong> --";
+            sizeSelect.innerHTML = '<option value="">Size unavailable</option>';
             sizeSelect.disabled = true;
+            quantityInput.value = '1';
+            quantityInput.disabled = true;
+            document.getElementById("orderForm").querySelector('button[type=submit]').disabled = true;
+            document.getElementById("productImage").src = '';
             document.getElementById("result").innerText = "❌ Product not found.";
             return;
           }
@@ -113,12 +119,13 @@ const product = result.sync_product;
           document.getElementById("productName").innerText = product.name;
 
           if (variants.length <= 1) {
-            const sizeFromUrl = urlParams.get("size") || "Default Size";
-            sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
+            const singleVariant = variants[0];
+            const label = singleVariant?.size || singleVariant?.name || "Size unavailable";
+            sizeSelect.innerHTML = `<option value="${label}" selected>${label}</option>`;
             sizeSelect.disabled = true;
 
-            selectedVariantId = result.sync_variants?.[0]?.variant_id || product.id;
-            basePrice = parseFloat(product.retail_price) || 0;
+            selectedVariantId = singleVariant?.variant_id || product.id;
+            basePrice = parseFloat(singleVariant?.retail_price ?? product.retail_price) || 0;
             updatePriceDisplay();
           } else {
             sizeSelect.disabled = false;
