@@ -57,10 +57,7 @@
   </form>
 
   <div id="result"></div>
-  <div style="margin-top: 20px;text-align: center;font-size: 14px;color: #555"><br>
-  Payments powered by Stripe
-  <img src="https://vectorified.com/images/stripe-payment-icon-31.png" alt="Stripe Logo" style="height: 240px;width: 240px;margin-top: 5px" />
-  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const urlParams = new URLSearchParams(window.location.search);
@@ -112,14 +109,17 @@
           document.getElementById("productName").innerText = product.name;
 
           if (variants.length <= 1) { // Treat 0 or 1 variant the same
-            const sizeFromUrl = urlParams.get("size") || "Default Size";
-            sizeSelect.innerHTML = `<option value="${sizeFromUrl}" selected>${sizeFromUrl}</option>`;
+           const variants = result.sync_variants || result.variants || [];
+        const sizeSelect = document.getElementById("size");
+        if (variants.length === 1) {
+            // single‐variant branch
+            const v = variants[0];
+            const label = v.size || "10 L";
+            sizeSelect.innerHTML = `<option>${label}</option>`;
             sizeSelect.disabled = true;
-
-            selectedVariantId = "UNKNOWN";
-
-            basePrice = product.retail_price ? parseFloat(product.retail_price) : 0;
-            updatePriceDisplay();
+            selectedVariantId = v.variant_id;
+            basePrice = parseFloat(v.retail_price || 0);
+            updatePrice();
           } else {
             // Variants exist — enable size select and populate options
             sizeSelect.disabled = false;
