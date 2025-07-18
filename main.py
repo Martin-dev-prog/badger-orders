@@ -6,8 +6,6 @@ from datetime import date
 import os
 import stripe
 import requests  
-import redis
-r = redis.from_url(os.getenv("REDIS_URL"))
 
 app = Flask(
     __name__,
@@ -38,19 +36,7 @@ MAX_DAILY_SPEND = float(os.getenv("MAX_DAILY_SPEND", "100"))
 # Log exceptions to the console
 logging.basicConfig(level=logging.DEBUG)
 
-r = redis.from_url(os.getenv("REDIS_URL"))
 
-def get_daily_state():
-    raw = r.hgetall("daily_spend")
-    if not raw:
-        return 0, date.today().isoformat()
-    return int(raw[b"amount"]), raw[b"date"].decode()
-
-def save_daily_state(amount, reset_date):
-    r.hset("daily_spend", mapping={
-        "amount": amount,
-        "date": reset_date
-    })
 
 def reset_daily_spend_if_needed():
     amount, reset_date = get_daily_state()
