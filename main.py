@@ -354,7 +354,7 @@ def submit_order_full():
     session_obj=stripe.checkout.Session.create(
         payment_method_types=['card'], mode='payment',
         line_items=[{
-            'price_data':{'currency':'gbp','product_data':{'name':data.get('name','')},'unit_amount':cost//qty},
+            'price_data':{'currency':'gbp','product_data':{'name':data.get('name','')},'unit_amount':cost_pence//qty},
             'quantity':qty
         }],
         metadata={k:data.get(k) for k in('variant_id','product_id','size','color','name','email','address','city')},
