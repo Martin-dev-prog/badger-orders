@@ -231,7 +231,7 @@ def admin_dashboard():
                 message=f'✅ Limit set to {new}.'
             except ValueError:
                 message='❌ Invalid limit.'
-return render_template_string('''
+            return render_template_string('''
 <!doctype html>
 <html lang="en">
 <head>
