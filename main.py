@@ -1,4 +1,4 @@
-from flask import Flask, request, session, redirect, jsonify, url_for, render_template_string, abort
+from flask import Flask, request, session, redirect, jsonify, url_for, render_template_string, abort,send_from_directory
 from functools import wraps
 import os
 import stripe
@@ -12,8 +12,8 @@ app = Flask(
 )
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-default")
 CORS(app)
-from functools import wraps
-from flask import session, redirect, url_for
+
+
 
 daily_spend = 0
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
@@ -53,6 +53,7 @@ def check_password():
     token = request.args.get("token")
     if token != ADMIN_PASSWORD:
         abort(403, description="Unauthorized")
+        
 @app.route("/")
 def index():
     return app.send_static_file('index.html')
