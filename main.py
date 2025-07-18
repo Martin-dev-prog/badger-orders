@@ -10,6 +10,16 @@ from functools import wraps
 from flask import session, redirect, url_for
 
 daily_spend = 0
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
+PRINTFUL_HEADERS = {
+    "Authorization": f"Bearer {PRINTFUL_API_KEY}"
+}
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+
+BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
+destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "https://yourbackend.com/products/"
 last_reset = date.today()
 
 MAX_DAILY_SPEND = float(os.getenv("MAX_DAILY_SPEND", "100"))
@@ -29,16 +39,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
     
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
-PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
-PRINTFUL_HEADERS = {
-    "Authorization": f"Bearer {PRINTFUL_API_KEY}"
-}
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-
-BACKEND_URL = os.getenv("BACKEND_URL")  # e.g. "https://yourbackend.com/products/"
-destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "https://yourbackend.com/products/"
 
 import traceback
 
