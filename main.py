@@ -93,8 +93,8 @@ def submit_order():
         city = data.get("city")
         quantity = int(data.get("quantity", 1))
 
-        if not variant_id or variant_id.strip().upper() == "UNKNOWN":
-            return jsonify({"error": "Missing or invalid variant_id"}), 400
+        #if not variant_id or variant_id.strip().upper() == "UNKNOWN":
+        #    return jsonify({"error": "Missing or invalid variant_id"}), 400
 
         unit_price = 3000  # e.g. £30.00 in pence, or adjust as needed
         order_total = unit_price * quantity
