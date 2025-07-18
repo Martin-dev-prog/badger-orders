@@ -341,54 +341,66 @@ def submit_order_full():
         return '', 204
 
     try:
-        # Load/reset today’s spend
+        # 1) Load/reset today’s spend
         amount, today = reset_daily_spend_if_needed()
 
-        # Parse input
-        data = request.json or {}
-        qty  = int(data.get('quantity', 1))
-        cost = data.get('base_cost', 1)
-        name = data.get('name_var', 1)
-        size = data.get('size', 1)
-        # Convert unit cost to pence
+        # 2) Parse input
+        data     = request.json or {}
+        qty      = int(data.get('quantity', 1))
+        base_cost = float(data.get('base_cost', 0.0))
+        name_var  = data.get('name_var', '')
+        size      = data.get('size', '')
+
+        # 3) Build combined name: "<name_var> - <qty><size>"
+        combined_name = "{} - {}{}".format(name_var, qty, size)
+
+        # 4) Convert unit cost (pounds) to pence
         from decimal import Decimal, ROUND_HALF_UP
-        unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
-        unit_cost_pence  = int((unit_cost_pounds * 100).to_integral_value(ROUND_HALF_UP))
+        unit_cost_pence = int(
+            (Decimal(str(base_cost)) * 100)
+            .to_integral_value(ROUND_HALF_UP)
+        )
 
-        # Compute total cost in pence
+        # 5) Compute total cost and enforce cap
         cost_pence = unit_cost_pence * qty
-
-        # Read and convert cap to pence
         import os
-        cap_pounds = Decimal(os.getenv('MAX_DAILY_SPEND', '100'))
-        cap_pence  = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
-
-        # Enforce the cap
+        cap_pence = int(
+            (Decimal(os.getenv('MAX_DAILY_SPEND', '100')) * 100)
+            .to_integral_value(ROUND_HALF_UP)
+        )
         if amount + cost_pence > cap_pence:
             return jsonify({'error': 'Daily order limit reached'}), 429
-        combined_name = f"{name_var} - {qty}{size}"
-        # Create Stripe session
-       session_obj = stripe.checkout.Session.create(
 
-        line_items=[{
-        'price_data': {
-            'currency': 'gbp',
-           'product_data': {'name': data.get('name', '')},
-           'product_data': {'name': combined_name},
-            'unit_amount': unit_cost_pence
-          },
-            'quantity': qty
-        }],
-    
+        # 6) Create Stripe session
+        session_obj = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='payment',
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {'name': combined_name},
+                    'unit_amount': unit_cost_pence
+                },
+                'quantity': qty
+            }],
+            metadata={
+                'name':       name_var,
+                'size':       size,
+                'quantity':   str(qty),
+                'product_id': data.get('product_id', ''),
+                'variant_id': data.get('variant_id', '')
+            },
+            success_url=os.getenv('SUCCESS_URL', ''),
+            cancel_url = os.getenv('CANCEL_URL', '')
         )
-        # Persist updated spend
+
+        # 7) Persist updated spend
         save_daily_state(amount + cost_pence, today)
 
-        # Return the checkout link
+        # 8) Return the checkout link
         return jsonify({'stripe_link': session_obj.url})
 
-    except Exception as e:
-        # Capture and log full traceback
+    except Exception:
         import traceback
         tb = traceback.format_exc()
         print(tb)
