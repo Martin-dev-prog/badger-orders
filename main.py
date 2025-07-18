@@ -36,6 +36,21 @@ def check_password():
     token = request.args.get("token")
     if token != ADMIN_PASSWORD:
         abort(403, description="Unauthorized")
+@app.route("/")
+def api_index():
+    return jsonify({
+        "✅ Flask API is running": True,
+        "Routes": {
+            "/test-api": "🔧 Check connection to Printful API.",
+            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product.",
+            "/submit-order": "🛒 Submit an order via POST (requires JSON payload).",
+            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded.",
+            "/admin/set-limit": "Requires password from environment var to set the balance limit for the linked bank acount on printful.",
+            "/admin/reset-spend": "Sets the defauly balance back  in the syste for deivery of goods cost."
+        }
+    })
+
+
 
 @app.route("/admin/reset-spend", methods=["POST"])
 def reset_spend():
@@ -55,23 +70,7 @@ def set_limit():
     except Exception as e:
         return jsonify({"error": f"Invalid limit: {str(e)}"}), 400
 
-@app.route("/")
-def api_index():
-    return jsonify({
-        "✅ Flask API is running": True,
-        "Routes": {
-            "/test-api": "🔧 Check connection to Printful API.",
-            "/get-product-details/</get-product-ids>": "📦 Get details of a specific Printful product.",
-            "/submit-order": "🛒 Submit an order via POST (requires JSON payload).",
-            "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded.",
-            "/admin/set-limit": "Requires password from environment var to set the balance limit for the linked bank acount on printful.",
-            "/admin/reset-spend": "Sets the defauly balance back  in the syste for deivery of goods cost."
-        }
-    })
 
-
-
-@app.route("/submit-order", methods=["POST", "GET", "OPTIONS"])
 @app.route("/submit-order", methods=["POST", "OPTIONS"])
 def submit_order():
     if request.method == "OPTIONS":
