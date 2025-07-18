@@ -2,6 +2,7 @@ from flask import Flask, request, session, redirect, jsonify, url_for, render_te
 from functools import wraps
 import os
 import stripe
+import requests  
 from flask_cors import CORS
 from datetime import date
 
