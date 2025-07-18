@@ -24,8 +24,8 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 # ——— Flask App Setup —————————————————————————————————
 app = Flask(
     __name__,
-    static_folder='static',
-    static_url_path=''
+    static_folder='static',    # on-disk static files
+    static_url_path=''         # serve at URL path “/”
 )
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-default')
 CORS(app)
@@ -61,9 +61,14 @@ def init_db():
     conn.commit()
     conn.close()
 
-@app.before_first_request
-def setup():
-    init_db()
+# Use a before_request hook to initialize the database once
+initialized = False
+@app.before_request
+def initialize_db():
+    global initialized
+    if not initialized:
+        init_db()
+        initialized = True
 
 def get_daily_state():
     today = date.today().isoformat()
@@ -74,6 +79,7 @@ def get_daily_state():
     conn.close()
     return (row[0] if row else 0.0), today
 
+
 def save_daily_state(amount, spend_date):
     conn = sqlite3.connect(DB_PATH)
     conn.execute('''
@@ -83,6 +89,7 @@ def save_daily_state(amount, spend_date):
     ''', (spend_date, amount))
     conn.commit()
     conn.close()
+
 
 def reset_daily_spend_if_needed():
     amount, spend_date = get_daily_state()
@@ -100,6 +107,7 @@ def admin_required(f):
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated
+
 
 def check_password():
     token = request.args.get('token') or (request.json or {}).get('token')
