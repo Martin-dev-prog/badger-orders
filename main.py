@@ -380,6 +380,7 @@ def submit_order_full():
                 'price_data': {
                     'currency': 'gbp',
                     'product_data': {'name': combined_name},
+                    'images':     image_url,
                     'unit_amount': cost_pence
                 },
                 'quantity': qty
