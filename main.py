@@ -1,4 +1,4 @@
-#DATE 2025-07-18
+#DATE 2025-07-18 -—————————————————————————————————
 
 import os
 import logging
@@ -15,7 +15,9 @@ from flask import (
 from flask_cors import CORS
 from functools import wraps
 
-# at the top
+
+
+# INITIALISE FLASK -—————————————————————————————————
 app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
 DB_PATH = os.path.join(app.instance_path, 'daily_spend.db')
