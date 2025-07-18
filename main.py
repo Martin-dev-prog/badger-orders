@@ -19,6 +19,8 @@ from functools import wraps
 app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
 DB_PATH = os.path.join(app.instance_path, 'daily_spend.db')
+print("Working directory:", os.getcwd())
+print("DB path:", os.path.abspath(DB_PATH))
 
 # ——— Configuration —————————————————————————————————
 DB_PATH = 'daily_spend.db'
