@@ -60,6 +60,8 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 7000);  // ← 700 ms
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
       const prefillFields = ["name", "email", "address", "city", "size", "quantity"];
@@ -82,7 +84,7 @@
         const total = (basePrice * qty).toFixed(2);
         document.getElementById("productPrice").innerHTML = `<strong>Price:</strong> £${basePrice.toFixed(2)} × ${qty} = £${total}`;
       }
-
+      
 
       if (!productId) {
         document.body.innerHTML = "<p style='color:red;'>❌ Error: No product ID provided in URL.</p>";
