@@ -12,7 +12,8 @@ app = Flask(
 )
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-default")
 CORS(app)
-
+import logging
+from flask import got_request_exception
 
 
 daily_spend = 0
@@ -29,6 +30,22 @@ destination_linked_acct  = os.getenv("DESTINATION_STRIPE_LINKED_ACCT")  # e.g. "
 last_reset = date.today()
 
 MAX_DAILY_SPEND = float(os.getenv("MAX_DAILY_SPEND", "100"))
+
+# Log exceptions to the console
+logging.basicConfig(level=logging.DEBUG)
+def log_exception(sender, exception, **extra):
+    sender.logger.exception("Unhandled exception:")
+got_request_exception.connect(log_exception, app)
+
+# And override the default error handler so you can see the stack trace in-browser:
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log it again (optional)
+    app.logger.exception("Exception on request:")
+    # Return the full stacktrace (only for debugging—remove in prod!)
+    import traceback
+    return "<pre>" + traceback.format_exc() + "</pre>", 500
+
 
 def reset_daily_spend_if_needed():
     global daily_spend, last_reset
