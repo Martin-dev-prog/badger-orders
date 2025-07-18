@@ -291,8 +291,14 @@ def submit_order_full():
     amount, today = reset_daily_spend_if_needed()
     data=request.json or {}
     qty=int(data.get('quantity',1))
-    cost=3000*qty
-    if amount+cost>MAX_DAILY_SPEND:
+    from decimal import Decimal, ROUND_HALF_UP
+    unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
+    # convert to pence
+    unit_cost_pence  = int((unit_cost_pounds * 100).to_integral_value(ROUND_HALF_UP))
+    raw_cap = os.getenv('MAX_DAILY_SPEND', '100')   # string like "100"
+    cap_pounds = Decimal(raw_cap)
+    cap_pence   = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
+    if  amount_spent_pence + cost_pence > cap_pence:
         return jsonify({'error':'Daily order limit reached'}),429
     session_obj=stripe.checkout.Session.create(
         payment_method_types=['card'], mode='payment',
