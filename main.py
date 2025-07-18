@@ -42,6 +42,17 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-default')
 CORS(app)
 logging.basicConfig(level=logging.DEBUG)
 
+# ——— Initialize daily_spend database —————————————————————————
+DB_PATH = os.path.join(app.instance_path, 'daily_spend.db')
+with sqlite3.connect(DB_PATH) as conn:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS spend (
+            spend_date TEXT PRIMARY KEY,
+            amount     REAL NOT NULL
+        )
+    """)
+
+
 # ——— Initialize SQLite DB —————————————————————————————
 def init_db():
     conn = sqlite3.connect(DB_PATH)
