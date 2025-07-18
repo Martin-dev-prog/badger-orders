@@ -90,6 +90,17 @@
 
       fetch(`https://badger-orders.onrender.com/get-product-details/${productId}`)
         .then(res => res.json())
+        if (!res.ok || !contentType.includes("application/json")) {
+        document.getElementById("productImage").style.display = "none";
+        document.getElementById("productName").innerText = "Merchant Services Offline";
+        document.getElementById("result").innerHTML = `
+          <p style="color:red; font-weight:bold;">
+            The store is currently offline. Please try again later.
+          </p>`;
+        console.error("Service error:", raw);
+        return;
+        }
+
         .then(data => {
           const result = data?.result?.result || data?.result;
           if (!result?.sync_product) {
