@@ -194,10 +194,11 @@ const product = result.sync_product;
           address: document.getElementById("address").value,
           city: document.getElementById("city").value,
           size: sizeSelect.value || "N/A",
-          quantity: quantityInput.value,
-          price: base_price,
+          name: document.getElementById("productName").innerText || "N/A",
+          quantity: quantityInput.value|| "N/A",
+          base_price: base_price|| 0",
           variant_id: selectedVariantId || "UNKNOWN",
-          product_id: productId
+          product_id: productId|| "N/A"
        
         };
 
