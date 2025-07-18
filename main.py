@@ -349,6 +349,7 @@ def submit_order_full():
         qty  = int(data.get('quantity', 1))
         cost = data.get('base_cost', 1)
         name = data.get('name_var', 1)
+        size = data.get('size', 1)
         # Convert unit cost to pence
         from decimal import Decimal, ROUND_HALF_UP
         unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
@@ -365,27 +366,21 @@ def submit_order_full():
         # Enforce the cap
         if amount + cost_pence > cap_pence:
             return jsonify({'error': 'Daily order limit reached'}), 429
-
+        combined_name = f"{name_var} - {qty}{size}"
         # Create Stripe session
-        session_obj = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            mode='payment',
-            line_items=[{
-                'price_data': {
-                    'currency': 'gbp',
-                    'product_data': {'name': data.get('name', '')},
-                    'unit_amount': unit_cost_pence
-                },
-                'quantity': qty
-            }],
-            metadata={k: data.get(k) for k in (
-                'variant_id','product_id','size','color',
-                'name','email','address','city'
-            )},
-            success_url=os.getenv('SUCCESS_URL', ''),
-            cancel_url=os.getenv('CANCEL_URL', '')
-        )
+       session_obj = stripe.checkout.Session.create(
 
+        line_items=[{
+        'price_data': {
+            'currency': 'gbp',
+           'product_data': {'name': data.get('name', '')},
+           'product_data': {'name': combined_name},
+            'unit_amount': unit_cost_pence
+          },
+            'quantity': qty
+        }],
+    
+        )
         # Persist updated spend
         save_daily_state(amount + cost_pence, today)
 
