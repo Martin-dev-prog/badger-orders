@@ -348,11 +348,11 @@ def submit_order_full():
         data     = request.json or {}
         qty      = int(data.get('quantity', 1))
         base_cost = float(data.get('base_cost', 0.0))
-        name_var  = data.get('name_var', '')
+        product_name = data.get('product_name', '')
         size      = data.get('size', '')
 
         # 3) Build combined name: "<name_var> - <qty><size>"
-        combined_name = "{} - {} x {}".format(name_var, qty, size)
+        combined_name = "{} - {} x {}".format( product_name, qty, size)
 
         # 4) Convert unit cost (pounds) to pence
         from decimal import Decimal, ROUND_HALF_UP
