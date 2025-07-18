@@ -215,6 +215,45 @@ const product = result.sync_product;
         }
       });
     });
+ 
+    (function() {
+      const unitPrice = basePrice;
+      const quantity  = Number(quantityInput.value);
+      const total     = (unitPrice * quantity).toFixed(2);
+      document.getElementById("orderTotal").innerText = `£${total}`;
+
+      document.getElementById("completeOrder").addEventListener("click", async () => {
+        const payload = {
+          name:       document.getElementById("name").value,
+          email:      document.getElementById("email").value,
+          address:    document.getElementById("address").value,
+          city:       document.getElementById("city").value,
+          size:       sizeSelect.value,
+          quantity:   quantity,
+          variant_id: selectedVariantId,
+          product_id: productId,
+          cost:       unitPrice
+        };
+
+        try {
+          const res = await fetch("/submit-order", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify(payload)
+          });
+          const data = await res.json();
+
+          if (res.ok && data.stripe_link) {
+            window.location.href = data.stripe_link;
+          } else {
+            alert(data.error || "Unexpected error");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Network error, please try again.");
+        }
+      });
+    })();
   </script>
 </body>
 </html>
