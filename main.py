@@ -7,6 +7,7 @@ import os
 import stripe
 import requests  
 import redis
+r = redis.from_url(os.getenv("REDIS_URL"))
 
 app = Flask(
     __name__,
