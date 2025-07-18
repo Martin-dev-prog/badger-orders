@@ -19,7 +19,14 @@ def reset_daily_spend_if_needed():
     if today != last_reset:
         daily_spend = 0
         last_reset = today
-
+        
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("admin_login"))
+        return f(*args, **kwargs)
+    return decorated_function
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
 PRINTFUL_HEADERS = {
