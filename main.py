@@ -46,11 +46,47 @@ def api_index():
             "/submit-order": "🛒 Submit an order via POST (requires JSON payload).",
             "/debug-env": "🧪 (Optional) Debug: See if the PRINTFUL_API_KEY is loaded.",
             "/admin/set-limit": "Requires password from environment var to set the balance limit for the linked bank acount on printful.",
-            "/admin/reset-spend": "Sets the defauly balance back  in the syste for deivery of goods cost."
+            "/admin/reset-spend": "Sets the defauly balance back  in the syste for deivery of goods cost.",
+            "/admin/dashboard": "Login"
         }
     })
 
 
+@app.route("/admin/dashboard", methods=["GET", "POST"])
+@admin_required
+def admin_dashboard():
+    message = ""
+
+    if request.method == "POST":
+        if "reset_spend" in request.form:
+            global daily_spend
+            daily_spend = 0
+            message = "✅ Daily spend has been reset to 0."
+
+        elif "set_limit" in request.form:
+            try:
+                new_limit = float(request.form.get("new_limit", ""))
+                global MAX_DAILY_SPEND
+                MAX_DAILY_SPEND = new_limit
+                message = f"✅ MAX_DAILY_SPEND set to {MAX_DAILY_SPEND}."
+            except ValueError:
+                message = "❌ Invalid limit entered."
+
+    return render_template_string("""
+        <h1>Admin Dashboard</h1>
+        {% if message %}
+          <p style="color:green;">{{ message }}</p>
+        {% endif %}
+        <form method="post">
+            <button name="reset_spend" type="submit">Reset Daily Spend</button>
+        </form>
+        <hr>
+        <form method="post">
+            <label for="new_limit">Set New Spend Limit (£):</label>
+            <input name="new_limit" type="number" step="0.01" min="0" required>
+            <button name="set_limit" type="submit">Set Limit</button>
+        </form>
+    """, message=message)
 
 @app.route("/admin/reset-spend", methods=["POST"])
 def reset_spend():
