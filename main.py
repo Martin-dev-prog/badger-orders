@@ -50,6 +50,8 @@ def check_password():
     if token != ADMIN_PASSWORD:
         abort(403, description="Unauthorized")
 @app.route("/")
+def index():
+    return app.send_static_file('index.html')
 def api_index():
     return jsonify({
         "✅ Flask API is running": True,
