@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
       variant_id:     selectedVariantId,
       product_id:     productId
     };
-
+    console.log("▶️ Payload to /submit-order:", payload);
     try {
       const response = await fetch('https://badger-orders.onrender.com/submit-order', {
         method:  'POST',
