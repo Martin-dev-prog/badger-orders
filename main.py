@@ -379,7 +379,7 @@ def submit_order_full():
                 'price_data': {
                     'currency': 'gbp',
                     'product_data': {'name': combined_name},
-                    'unit_amount': unit_cost_pence
+                    'unit_amount': cost_pence
                 },
                 'quantity': qty
             }],
