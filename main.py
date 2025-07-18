@@ -2,7 +2,7 @@ from flask import Flask, request, session, redirect, url_for, render_template_st
 from functools import wraps
 import os
 import stripe
-from CORS
+from flask_cors import CORS
 from datetime import date
 app = Flask(__name__)
 CORS(app)
