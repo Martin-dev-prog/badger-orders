@@ -231,11 +231,59 @@ def admin_dashboard():
                 message=f'✅ Limit set to {new}.'
             except ValueError:
                 message='❌ Invalid limit.'
-    return render_template_string('''<h1>Dashboard</h1>
-{% if message %}<p>{{ message }}</p>{% endif %}
-<form method="post"><button name="reset_spend">Reset Spend</button></form>
-<form method="post">Limit: <input name="new_limit" type="number" step="0.01" required>
-<button name="set_limit">Set Limit</button></form>''', message=message)
+return render_template_string('''
+<!doctype html>
+<html lang="en">
+<head>
+  <style>
+    #dashboard {
+      max-width: 320px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 14px;
+      color: #333;
+    }
+    #dashboard h1 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    #dashboard form {
+      margin: 12px 0;
+    }
+    #dashboard input[type="number"] {
+      width: 80px;
+      margin-left: 6px;
+    }
+    #dashboard button {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="dashboard">
+    <h1>Dashboard</h1>
+    {% if message %}
+      <p>{{ message }}</p>
+    {% endif %}
+    <form method="post">
+      <button name="reset_spend">Reset Spend</button>
+    </form>
+    <form method="post">
+      Limit:
+      <input name="new_limit" type="number" step="0.01" required>
+      <button name="set_limit">Set Limit</button>
+    </form>
+  </div>
+</body>
+</html>
+''', message=message)
+
 
 # Admin API
 @app.route('/admin/reset-spend', methods=['POST'])
