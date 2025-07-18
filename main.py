@@ -6,6 +6,8 @@ from datetime import date
 import os
 import stripe
 import requests  
+import sqlite3
+from datetime import date
 
 app = Flask(
     __name__,
@@ -17,7 +19,7 @@ CORS(app)
 import logging
 from flask import got_request_exception
 
-
+DB_PATH = 'daily_spend.db'
 daily_spend = 0
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
 PRINTFUL_API_KEY = os.getenv("PRINTFUL_API_KEY")
@@ -92,7 +94,24 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
     
+def get_daily_state():
+    today = date.today().isoformat()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT amount FROM spend WHERE spend_date = ?", (today,))
+    row = cur.fetchone()
+    conn.close()
+    return (row[0] if row else 0.0), today
 
+def save_daily_state(amount, spend_date):
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        INSERT INTO spend(spend_date, amount)
+        VALUES(?, ?)
+        ON CONFLICT(spend_date) DO UPDATE SET amount=excluded.amount
+    """, (spend_date, amount))
+    conn.commit()
+    conn.close()
 
 import traceback
 
@@ -100,6 +119,18 @@ def check_password():
     token = request.args.get("token")
     if token != ADMIN_PASSWORD:
         abort(403, description="Unauthorized")
+
+@app.before_first_request
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS spend (
+            spend_date TEXT PRIMARY KEY,
+            amount     REAL NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
         
 @app.route("/")
 def index():
@@ -199,8 +230,11 @@ def submit_order():
     if request.method == "OPTIONS":
         return '', 204  # CORS preflight
 
-    global daily_spend
-    reset_daily_spend_if_needed()
+    amount, today = get_daily_state()
+    if amount >= MAX_DAILY_SPEND:
+        return jsonify({
+            "error": "Daily order limit reached. Please try again tomorrow."
+        }), 429
 
     try:
         data = request.json
