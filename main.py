@@ -386,7 +386,7 @@ def submit_order_full():
             }],
             metadata={
                 'name':       product_name ,
-                'images': [ image_url ]
+                'images':     [ image_url ],
                 'size':       size,
                 'quantity':   str(qty),
                 'price':   str(cost_pence),
