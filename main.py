@@ -15,7 +15,8 @@ from flask import (
 from flask_cors import CORS
 from functools import wraps
 
-
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 # INITIALISE FLASK -—————————————————————————————————
 app = Flask(__name__, instance_relative_config=True)
