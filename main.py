@@ -350,6 +350,7 @@ def submit_order_full():
         base_cost = float(data.get('base_cost', 0.0))
         product_name = data.get('product_name', '')
         size      = data.get('size', '')
+        image_url = data.get('image_url', '')
 
         # 3) Build combined name: "<name_var> - <qty><size>"
         combined_name = "{} - {} x {}".format( product_name, qty, size)
@@ -385,6 +386,7 @@ def submit_order_full():
             }],
             metadata={
                 'name':       product_name ,
+                'images': [ image_url ]
                 'size':       size,
                 'quantity':   str(qty),
                 'price':   str(cost_pence),
