@@ -158,13 +158,51 @@ def api_index():
 
 # Admin UI
 login_form = '''<!doctype html>
-<title>Admin Login</title>
-<h2>Admin Login</h2>
-<form method="post">
-  <input type="password" name="password" placeholder="Admin password" required>
-  <button type="submit">Login</button>
-</form>
-{% if error %}<p style="color:red;">{{ error }}</p>{% endif %}'''
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Login</title>
+  <style>
+    html, body { height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: #f0f0f0; }
+    .login-box {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 320px;
+      font-family: sans-serif;
+    }
+    .login-box h2 { margin-top: 0; text-align: center; }
+    .login-box form { display: flex; flex-direction: column; }
+    .login-box input, .login-box button {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      border-radius: 4px;
+    }
+    .login-box input { border: 1px solid #ccc; }
+    .login-box button {
+      border: none;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .login-box button:hover { background: #0056b3; }
+    .login-box .error { color: red; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Admin Login</h2>
+    <form method="post">
+      <input type="password" name="password" placeholder="Admin password" required>
+      <button type="submit">Login</button>
+    </form>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  </div>
+</body>
+</html>'''
+
 
 @app.route('/admin/login', methods=['GET','POST'])
 def admin_login():
