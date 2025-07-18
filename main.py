@@ -289,8 +289,6 @@ def get_product_details(product_id):
 def submit_order_full():
     if request.method=='OPTIONS': return '',204
     amount, today = reset_daily_spend_if_needed()
-    if amount>=MAX_DAILY_SPEND:
-        return jsonify({'error':'Daily order limit reached'}),429
     data=request.json or {}
     qty=int(data.get('quantity',1))
     cost=3000*qty
