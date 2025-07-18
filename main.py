@@ -14,6 +14,7 @@ from flask import (
 )
 from flask_cors import CORS
 from functools import wraps
+from decimal import Decimal, ROUND_HALF_UP
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -347,6 +348,7 @@ def submit_order_full():
     raw_cap = os.getenv('MAX_DAILY_SPEND', '100')   # string like "100"
     cap_pounds = Decimal(raw_cap)
     cap_pence   = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
+    cost_pence = unit_cost_pence * qty
     if  amount + cost_pence > cap_pence:
         return jsonify({'error':'Daily order limit reached'}),429
     session_obj=stripe.checkout.Session.create(
