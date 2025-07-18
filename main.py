@@ -5,6 +5,8 @@ import stripe
 from flask_cors import CORS
 from datetime import date
 app = Flask(__name__)
+
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-default")
 CORS(app)
 from functools import wraps
 from flask import session, redirect, url_for
