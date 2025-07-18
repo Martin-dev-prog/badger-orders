@@ -6,7 +6,8 @@ import stripe
 from datetime import date
 app = Flask(__name__)
 CORS(app)
-
+from functools import wraps
+from flask import session, redirect, url_for
 
 daily_spend = 0
 last_reset = date.today()
