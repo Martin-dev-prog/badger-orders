@@ -6,7 +6,7 @@ from datetime import date
 import os
 import stripe
 import requests  
-
+import redis
 
 app = Flask(
     __name__,
@@ -36,6 +36,46 @@ MAX_DAILY_SPEND = float(os.getenv("MAX_DAILY_SPEND", "100"))
 
 # Log exceptions to the console
 logging.basicConfig(level=logging.DEBUG)
+
+r = redis.from_url(os.getenv("REDIS_URL"))
+
+def get_daily_state():
+    raw = r.hgetall("daily_spend")
+    if not raw:
+        return 0, date.today().isoformat()
+    return int(raw[b"amount"]), raw[b"date"].decode()
+
+def save_daily_state(amount, reset_date):
+    r.hset("daily_spend", mapping={
+        "amount": amount,
+        "date": reset_date
+    })
+
+def reset_daily_spend_if_needed():
+    amount, reset_date = get_daily_state()
+    today = date.today().isoformat()
+    if reset_date != today:
+        amount = 0
+        reset_date = today
+        save_daily_state(amount, reset_date)
+    return amount, reset_date
+
+@app.route('/submit-order', methods=['POST'])
+def submit_order():
+    amount, reset_date = reset_daily_spend_if_needed()
+    if amount >= MAX_DAILY_SPEND:
+        return jsonify({
+            "error": "Daily order limit reached. Please try again tomorrow."
+        }), 429
+
+    # ... process order, compute cost `order_cost` ...
+    amount += order_cost
+    save_daily_state(amount, reset_date)
+
+    return jsonify({"message": "Order placed!", "new_total": amount})
+
+
+
 def log_exception(sender, exception, **extra):
     sender.logger.exception("Unhandled exception:")
 got_request_exception.connect(log_exception, app)
