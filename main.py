@@ -337,44 +337,69 @@ def get_product_details(product_id):
 # Order Submission
 @app.route('/submit-order', methods=['POST','OPTIONS'])
 def submit_order_full():
-    if request.method=='OPTIONS': return '',204
+    if request.method == 'OPTIONS':
+        return '', 204
+
     try:
-        # … all your existing code from amount,today … through save_daily_state …
-   
-    amount, today = reset_daily_spend_if_needed()
-    data=request.json or {}
-    qty=int(data.get('quantity',1))
-    from decimal import Decimal, ROUND_HALF_UP
-    unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
-    # convert to pence
-    unit_cost_pence  = int((unit_cost_pounds * 100).to_integral_value(ROUND_HALF_UP))
-    raw_cap = os.getenv('MAX_DAILY_SPEND', '100')   # string like "100"
-    cap_pounds = Decimal(raw_cap)
-    cap_pence   = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
-    cost_pence = unit_cost_pence * qty
-    if  amount + cost_pence > cap_pence:
-        return jsonify({'error':'Daily order limit reached'}),429
-    except Exception:
+        # Load/reset today’s spend
+        amount, today = reset_daily_spend_if_needed()
+
+        # Parse input
+        data = request.json or {}
+        qty  = int(data.get('quantity', 1))
+
+        # Convert unit cost to pence
+        from decimal import Decimal, ROUND_HALF_UP
+        unit_cost_pounds = Decimal(str(data.get('cost', '0.00')))
+        unit_cost_pence  = int((unit_cost_pounds * 100).to_integral_value(ROUND_HALF_UP))
+
+        # Compute total cost in pence
+        cost_pence = unit_cost_pence * qty
+
+        # Read and convert cap to pence
+        import os
+        cap_pounds = Decimal(os.getenv('MAX_DAILY_SPEND', '100'))
+        cap_pence  = int((cap_pounds * 100).to_integral_value(ROUND_HALF_UP))
+
+        # Enforce the cap
+        if amount + cost_pence > cap_pence:
+            return jsonify({'error': 'Daily order limit reached'}), 429
+
+        # Create Stripe session
+        session_obj = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='payment',
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {'name': data.get('name', '')},
+                    'unit_amount': unit_cost_pence
+                },
+                'quantity': qty
+            }],
+            metadata={k: data.get(k) for k in (
+                'variant_id','product_id','size','color',
+                'name','email','address','city'
+            )},
+            success_url=os.getenv('SUCCESS_URL', ''),
+            cancel_url=os.getenv('CANCEL_URL', '')
+        )
+
+        # Persist updated spend
+        save_daily_state(amount + cost_pence, today)
+
+        # Return the checkout link
+        return jsonify({'stripe_link': session_obj.url})
+
+    except Exception as e:
+        # Capture and log full traceback
+        import traceback
         tb = traceback.format_exc()
-        # Log to your Render logs
         print(tb)
-        # Return it in the response for now
         return jsonify({
             'error': 'Internal Server Error',
             'traceback': tb
-        }), 500    
-
-    session_obj=stripe.checkout.Session.create(
-        payment_method_types=['card'], mode='payment',
-        line_items=[{
-            'price_data':{'currency':'gbp','product_data':{'name':data.get('name','')},'unit_amount':cost_pence//qty},
-            'quantity':qty
-        }],
-        metadata={k:data.get(k) for k in('variant_id','product_id','size','color','name','email','address','city')},
-        success_url=os.getenv('SUCCESS_URL',''), cancel_url=os.getenv('CANCEL_URL','')
-    )
-    save_daily_state(amount+cost, today)
-    return jsonify({'stripe_link':session_obj.url})
+        }), 500
 
 # Stripe Webhook
 @app.route('/stripe/webhook', methods=['POST'])
