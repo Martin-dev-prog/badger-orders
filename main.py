@@ -1,3 +1,8 @@
+# at the top
+app = Flask(__name__, instance_relative_config=True)
+os.makedirs(app.instance_path, exist_ok=True)
+DB_PATH = os.path.join(app.instance_path, 'daily_spend.db')
+
 import os
 import logging
 import sqlite3
