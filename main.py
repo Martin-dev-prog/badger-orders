@@ -7,8 +7,8 @@ import stripe
 import requests
 from flask import (
     Flask, request, session, redirect, jsonify,
-    url_for, render_template_string, abort,
-    send_from_directory, got_request_exception
+    url_for, render_template, render_template_string,
+    abort, send_from_directory
 )
 from flask_cors import CORS
 from functools import wraps
@@ -24,32 +24,14 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 # ——— Flask App Setup —————————————————————————————————
 app = Flask(
     __name__,
-    static_folder='static',
-    static_url_path=''
+    static_folder='static',    # on-disk static files
+    static_url_path=''         # serve at URL path “/”
 )
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-default')
 CORS(app)
 logging.basicConfig(level=logging.DEBUG)
 
-def log_exception(sender, exception, **extra):
-    sender.logger.exception('Unhandled exception:')
-got_request_exception.connect(log_exception, app)
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    app.logger.exception('Exception on request:')
-    api_paths = (
-        '/test-api', '/get-product-details', '/get-product-ids',
-        '/submit-order', '/debug-env', '/admin/set-limit', '/admin/reset-spend'
-    )
-    if any(request.path.startswith(p) for p in api_paths):
-        resp = jsonify({'error': 'Internal Server Error', 'message': str(e)})
-        resp.status_code = getattr(e, 'code', 500)
-        return resp
-    import traceback
-    return '<pre>' + traceback.format_exc() + '</pre>', 500
-
-# ——— SQLite Helpers —————————————————————————————————
+# ——— Initialize SQLite DB —————————————————————————————
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute('''
@@ -62,14 +44,9 @@ def init_db():
     conn.close()
 
 # Ensure DB is initialized once
-_db_initialized = False
-@app.before_request
-def _ensure_db():
-    global _db_initialized
-    if not _db_initialized:
-        init_db()
-        _db_initialized = True
+init_db()
 
+# ——— Helper Functions ——————————————————————————————————
 def get_daily_state():
     today = date.today().isoformat()
     conn = sqlite3.connect(DB_PATH)
@@ -78,6 +55,7 @@ def get_daily_state():
     row = cur.fetchone()
     conn.close()
     return (row[0] if row else 0.0), today
+
 
 def save_daily_state(amount, spend_date):
     conn = sqlite3.connect(DB_PATH)
@@ -88,6 +66,7 @@ def save_daily_state(amount, spend_date):
     ''', (spend_date, amount))
     conn.commit()
     conn.close()
+
 
 def reset_daily_spend_if_needed():
     amount, spend_date = get_daily_state()
@@ -106,12 +85,29 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
+
 def check_password():
     token = request.args.get('token') or (request.json or {}).get('token')
     if token != ADMIN_PASSWORD:
         abort(403)
 
+# ——— Error Handling —————————————————————————————————
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app.logger.exception('Exception on request:')
+    api_paths = (
+        '/test-api', '/get-product-details', '/get-product-ids',
+        '/submit-order', '/debug-env', '/admin/set-limit', '/admin/reset-spend'
+    )
+    if any(request.path.startswith(p) for p in api_paths):
+        resp = jsonify({'error': 'Internal Server Error', 'message': str(e)})
+        resp.status_code = getattr(e, 'code', 500)
+        return resp
+    import traceback
+    return '<pre>' + traceback.format_exc() + '</pre>', 500
+
 # ——— Routes —————————————————————————————————————
+# Serve static files and index
 @app.route('/')
 @app.route('/index.html')
 def serve_index():
@@ -121,7 +117,8 @@ def serve_index():
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
 
-@app.route('/api')
+# API index
+@app.route('/api', methods=['GET'])
 def api_index():
     return jsonify({
         '✅ Flask API is running': True,
@@ -130,12 +127,14 @@ def api_index():
             '/get-product-ids': 'List Printful products',
             '/get-product-details/<product_id>': 'Product details',
             '/submit-order': 'Submit an order (POST JSON)',
+            '/debug-env': 'Debug environment flags',
             '/admin/set-limit': 'Set spend limit (POST token+limit)',
             '/admin/reset-spend': 'Reset daily counter (POST token)',
             '/admin/dashboard': 'Admin web UI'
         }
     })
 
+# Admin UI
 login_form = '''<!doctype html>
 <title>Admin Login</title>
 <h2>Admin Login</h2>
@@ -147,34 +146,37 @@ login_form = '''<!doctype html>
 
 @app.route('/admin/login', methods=['GET','POST'])
 def admin_login():
+    error=None
     if request.method=='POST':
         if request.form.get('password')==ADMIN_PASSWORD:
             session['admin_logged_in']=True
             return redirect(url_for('admin_dashboard'))
-        return render_template_string(login_form, error='Incorrect password')
-    return render_template_string(login_form)
+        error='Incorrect password'
+    return render_template_string(login_form, error=error)
 
 @app.route('/admin/dashboard', methods=['GET','POST'])
 @admin_required
 def admin_dashboard():
-    msg=''
+    message=''
     if request.method=='POST':
         if 'reset_spend' in request.form:
             save_daily_state(0.0, date.today().isoformat())
-            msg='✅ Daily spend reset.'
+            message='✅ Daily spend reset.'
         elif 'set_limit' in request.form:
             try:
-                new=float(request.form['new_limit'])
+                new=float(request.form.get('new_limit',''))
                 global MAX_DAILY_SPEND
                 MAX_DAILY_SPEND=new
-                msg=f'✅ Limit set to {new}.'
-            except:
-                msg='❌ Invalid limit.'
+                message=f'✅ Limit set to {new}.'
+            except ValueError:
+                message='❌ Invalid limit.'
     return render_template_string('''<h1>Dashboard</h1>
-{{msg}}<form method="post"><button name="reset_spend">Reset Spend</button></form>
+{% if message %}<p>{{ message }}</p>{% endif %}
+<form method="post"><button name="reset_spend">Reset Spend</button></form>
 <form method="post">Limit: <input name="new_limit" type="number" step="0.01" required>
-<button name="set_limit">Set Limit</button></form>''', msg=msg)
+<button name="set_limit">Set Limit</button></form>''', message=message)
 
+# Admin API
 @app.route('/admin/reset-spend', methods=['POST'])
 def api_reset_spend():
     check_password()
@@ -192,6 +194,7 @@ def api_set_limit():
     except:
         return jsonify({'error':'Invalid limit'}),400
 
+# Printful & Test API
 @app.route('/test-api')
 def test_api():
     r=requests.get('https://api.printful.com/store/products', headers=PRINTFUL_HEADERS)
@@ -202,50 +205,61 @@ def get_product_ids():
     url='https://api.printful.com/store/products'
     allp,off,lim=[],0,20
     while True:
-        r=requests.get(f"{url}?limit={lim}&offset={off}",headers=PRINTFUL_HEADERS)
+        r=requests.get(f"{url}?limit={lim}&offset={off}", headers=PRINTFUL_HEADERS)
         if r.status_code!=200:
             return jsonify({'error':'Failed'}),r.status_code
         data=r.json().get('result',[])
         allp+=data
-        if len(data)<lim:break
+        if len(data)<lim: break
         off+=lim
     return jsonify([{'id':p['id'],'name':p['name']} for p in allp])
 
 @app.route('/get-product-details/<product_id>')
 def get_product_details(product_id):
     try:
-        r=requests.get(f"https://api.printful.com/store/products/{product_id}",
-                       headers=PRINTFUL_HEADERS,timeout=5)
+        r=requests.get(f"https://api.printful.com/store/products/{product_id}", headers=PRINTFUL_HEADERS, timeout=5)
         r.raise_for_status()
-        return jsonify(r.json()),r.status_code
+        return jsonify(r.json()), r.status_code
     except Exception as e:
-        app.logger.exception("Error loading product")
+        app.logger.exception("Error loading product details")
         return jsonify({'error':'Failed to load','details':str(e)}),502
 
-@app.route('/submit-order',methods=['POST','OPTIONS'])
-def submit_order():
-    if request.method=='OPTIONS':return '',204
-    amt,today=reset_daily_spend_if_needed()
-    if amt>=MAX_DAILY_SPEND:
+# Order Submission
+@app.route('/submit-order', methods=['POST','OPTIONS'])
+def submit_order_full():
+    if request.method=='OPTIONS': return '',204
+    amount, today = reset_daily_spend_if_needed()
+    if amount>=MAX_DAILY_SPEND:
         return jsonify({'error':'Daily order limit reached'}),429
-    d=request.json or {}
-    qty=int(d.get('quantity',1))
+    data=request.json or {}
+    qty=int(data.get('quantity',1))
     cost=3000*qty
-    if amt+cost>MAX_DAILY_SPEND:
+    if amount+cost>MAX_DAILY_SPEND:
         return jsonify({'error':'Daily order limit reached'}),429
-    sess=stripe.checkout.Session.create(
-        payment_method_types=['card'],mode='payment',
-        line_items=[{'price_data':{'currency':'gbp',
-                    'product_data':{'name':d.get('name','')},
-                    'unit_amount':cost//qty},
-                    'quantity':qty}],
-        metadata={k:d.get(k) for k in('variant_id','product_id','size','color','name','email','address','city')},
-        success_url=os.getenv('SUCCESS_URL',''),cancel_url=os.getenv('CANCEL_URL','')
+    session_obj=stripe.checkout.Session.create(
+        payment_method_types=['card'], mode='payment',
+        line_items=[{
+            'price_data':{'currency':'gbp','product_data':{'name':data.get('name','')},'unit_amount':cost//qty},
+            'quantity':qty
+        }],
+        metadata={k:data.get(k) for k in('variant_id','product_id','size','color','name','email','address','city')},
+        success_url=os.getenv('SUCCESS_URL',''), cancel_url=os.getenv('CANCEL_URL','')
     )
-    amt+=cost
-    save_daily_state(amt,today)
-    return jsonify({'stripe_link':sess.url})
+    save_daily_state(amount+cost, today)
+    return jsonify({'stripe_link':session_obj.url})
 
-@app.route('/stripe/webhook',methods=['POST'])
+# Stripe Webhook
+@app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
     payload, sig = request.data, request.headers.get('stripe-signature')
+    try:
+        event=stripe.Webhook.construct_event(payload, sig, os.getenv('STRIPE_WEBHOOK_SECRET'))
+    except Exception:
+        return jsonify({'error':'Invalid webhook'}),400
+    if event['type']=='checkout.session.completed':
+        pass
+    return jsonify({'status':'success'})
+
+# Run
+if __name__=='__main__':
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT',5000)), debug=True)
