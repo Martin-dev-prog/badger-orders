@@ -151,7 +151,7 @@ def create_printful_order(name, email, address, city, variant_id, qty, image_url
         }]
     }
     resp = requests.post(url, headers=headers, json=payload)
-    resp.raise_for_status()
+
     data = resp.json()
     if not data.get("code") == 200 and "result" not in data:
         # Printful returns {"code": 400, "result": {...}} on error
@@ -219,7 +219,6 @@ def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
 
 # Stripe Webhook
-
 @app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
     payload, sig = request.data, request.headers.get('Stripe-Signature')
