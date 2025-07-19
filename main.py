@@ -36,6 +36,7 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'changeme')
 PRINTFUL_API_KEY = os.getenv('PRINTFUL_API_KEY')
 PRINTFUL_HEADERS = {'Authorization': f'Bearer {PRINTFUL_API_KEY}'}
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+endpoint_secret  = os.environ['STRIPE_WEBHOOK_SECRET']
 
 # ——— Flask App Setup —————————————————————————————————
 app = Flask(
