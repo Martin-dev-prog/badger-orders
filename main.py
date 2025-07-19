@@ -490,7 +490,11 @@ def stripe_webhook():
                 image_url=metadata.get('image_url')
             )
             # 3) Persist the Printful order ID and mark the Stripe session as handled
-            save_fulfillment(session['id'], pf_order['id'])
+            save_fulfillment( stripe_session_id=session['id'],  printful_order_id=pf_order['id'],  customer_email=meta.get('email'), 
+                             customer_name=meta.get('name'),  product_name=meta.get('product_name'),  variant_id=meta.get('variant_id'),    
+                             size=meta.get('size'), quantity=int(meta.get('quantity', 1)),  cost_pence=int(meta.get('price', 0)),
+                             image_url=meta.get('image_url'),    created_at=session['created']
+)
         except Exception as e:
             # Log the error so you can retry fulfillment later
             app.logger.exception("Printful order creation failed for session %s", session['id'])
