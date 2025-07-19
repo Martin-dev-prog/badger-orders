@@ -205,7 +205,11 @@ login_form = '''<!doctype html>
 </body>
 </html>'''
 
-
+@app.route('/favicon.ico')
+def favicon():
+    # Return “No Content” so browsers don’t keep retrying
+    return '', 204
+    
 @app.route('/admin/login', methods=['GET','POST'])
 def admin_login():
     error=None
