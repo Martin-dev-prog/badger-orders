@@ -385,11 +385,11 @@ def submit_order_full():
                     'currency': 'gbp',
                     'product_data': {
                         'name': combined_name,
-                        'images': [ image_url ]    # ← images *inside* product_data
-                    }
-                    'unit_amount': cost_pence
+                        'images': [ image_url ],    # ← images *inside* product_data
+                    },
+                    'unit_amount': cost_pence,
                 },
-                'quantity': qty
+                'quantity': qty,
             }],
             metadata={
                 'name':       product_name ,
