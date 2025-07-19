@@ -507,9 +507,9 @@ def stripe_webhook():
 
     # Handle the checkout.session.completed event
     if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']  # the Stripe session object
+        session = event['data']['object']
         # 1) Pull out your metadata
-        metadata = session.get('metadata', {})
+        metadata       = session.get('metadata', {})
         customer_name  = metadata.get('name')
         customer_email = metadata.get('email')
         product_id     = metadata.get('product_id')
@@ -517,26 +517,23 @@ def stripe_webhook():
         size           = metadata.get('size')
         qty            = int(metadata.get('quantity', 1))
 
-        # 2) Create a Printful order
+        # 2) Transfer funds to your connected Stripe account
         payment_intent_id = session.get('payment_intent')
         if payment_intent_id:
             try:
                 payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
 
-                # Create transfer to connected Revolut account
-               transfer = stripe.Transfer.create(
-                   amount=payment_intent.amount_received,
-                   currency=payment_intent.currency,
-                   destination=os.environ['DESTINATION_STRIPE_LINKED_ACCT'],
-                   transfer_group=payment_intent.id,
-            )
+                transfer = stripe.Transfer.create(
+                    amount=payment_intent.amount_received,
+                    currency=payment_intent.currency,
+                    destination=os.environ['DESTINATION_STRIPE_LINKED_ACCT'],
+                    transfer_group=payment_intent.id,
+                )
             except Exception as e:
-                print(f"Transfer creation failed: {str(e)}")
-                # You can choose to return or continue here
+                print(f"Transfer creation failed: {e}")
+                # continue on to Printful
 
-        # Create Printful order (simplified example)
-
-        #    (requires you have a function that wraps the Printful API)
+        # 3) Create Printful order
         try:
             pf_order = create_printful_order(
                 customer_name,
@@ -547,18 +544,25 @@ def stripe_webhook():
                 qty,
                 image_url=metadata.get('image_url')
             )
-            # 3) Persist the Printful order ID and mark the Stripe session as handled
-            save_fulfillment( stripe_session_id=session['id'],  printful_order_id=pf_order['id'],  customer_email=metadata.get('email'), 
-                             customer_name=metadata.get('name'),  product_name=metadata.get('product_name'),  variant_id=metadata.get('variant_id'),    
-                             size=metadata.get('size'), quantity=int(metadata.get('quantity', 1)),  cost_pence=int(metadata.get('price', 0)),
-                             image_url=metadata.get('image_url'),    created_at=session['created']
-)
+            save_fulfillment(
+                stripe_session_id=session['id'],
+                printful_order_id=pf_order['id'],
+                customer_email=metadata.get('email'),
+                customer_name=metadata.get('name'),
+                product_name=metadata.get('product_name'),
+                variant_id=metadata.get('variant_id'),
+                size=metadata.get('size'),
+                quantity=qty,
+                cost_pence=int(metadata.get('price', 0)),
+                image_url=metadata.get('image_url'),
+                created_at=session['created']
+            )
         except Exception as e:
-            # Log the error so you can retry fulfillment later
-            app.logger.exception("Printful order creation failed for session %s", session['id'])
-            # You can choose to return a 200 here so Stripe doesn't keep retrying,
-            # or return a non‐200 to force another webhook attempt.
-            return jsonify({'status': 'printful_error'}), 500
+            app.logger.exception(
+                "Printful order creation failed for session %s: %s",
+                session['id'], e
+            )
+            return jsonify({'status': 'printful_error', 'error': str(e)}), 500
 
     return jsonify({'status': 'success'}), 200
 # Run
