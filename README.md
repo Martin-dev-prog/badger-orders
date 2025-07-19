@@ -13,6 +13,8 @@ Please process this account closure without further delay and deliver to me, in 
 Sincerely,
 Martin Newbold
 
+I was told that I couldn’t release the funds to pay the wholesaler until they had been fully reconciled. Frankly, that’s preposterous and feels utterly arbitrary. If this had been a genuine emergency affecting real customers, you wouldn’t have aided the process, and they’d have been left without goods—effectively a breach of contract.
+
 🦡 Badger Orders – Printful Order API (Flask)
 --------------------------------------------------------------------------
 This is a lightweight Python Flask API designed to handle print-on-demand orders (like T-shirts) via the Printful API. It integrates seamlessly with a custom frontend (e.g., a WordPress HTML form).
