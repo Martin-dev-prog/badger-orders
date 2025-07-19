@@ -145,6 +145,9 @@ document.addEventListener("DOMContentLoaded", function () {
         sizeSelect.disabled  = true;
 
         selectedVariantId = v.variant_id || product.id;
+        // DEBUG: log the single variant’s raw price
+         console.log("🎯 Single variant raw price:", v.retail_price, "fallback:", product.retail_price);
+
         basePrice        = parseFloat(v.retail_price ?? product.retail_price) || 0;
         updatePriceDisplay();
       } else {
