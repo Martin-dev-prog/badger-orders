@@ -210,11 +210,86 @@ def handle_exception(e):
     return '<pre>' + traceback.format_exc() + '</pre>', 500
 
 # ——— Routes —————————————————————————————————————
+
+
 # Serve static files and index
 @app.route('/')
 @app.route('/index.html')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
+
+# Stripe Webhook
+
+@app.route('/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    payload, sig = request.data, request.headers.get('Stripe-Signature')
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig, os.getenv('STRIPE_WEBHOOK_SECRET')
+        )
+    except Exception:
+        return jsonify({'error': 'Invalid webhook'}), 400
+
+    # Handle the checkout.session.completed event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        # 1) Pull out your metadata
+        metadata       = session.get('metadata', {})
+        customer_name  = metadata.get('name')
+        customer_email = metadata.get('email')
+        product_id     = metadata.get('product_id')
+        variant_id     = metadata.get('variant_id')
+        size           = metadata.get('size')
+        qty            = int(metadata.get('quantity', 1))
+
+        # 2) Transfer funds to your connected Stripe account
+        payment_intent_id = session.get('payment_intent')
+        if payment_intent_id:
+            try:
+                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+                transfer = stripe.Transfer.create(
+                    amount=payment_intent.amount_received,
+                    currency=payment_intent.currency,
+                    destination=os.environ['DESTINATION_STRIPE_LINKED_ACCT'],
+                    transfer_group=payment_intent.id,
+                )
+            except Exception as e:
+                print(f"Transfer creation failed: {e}")
+                # continue on to Printful
+
+        # 3) Create Printful order
+        try:
+            pf_order = create_printful_order(
+                customer_name,
+                customer_email,
+                metadata.get('address'),
+                metadata.get('city'),
+                variant_id,
+                qty,
+                image_url=metadata.get('image_url')
+            )
+            save_fulfillment(
+                stripe_session_id=session['id'],
+                printful_order_id=pf_order['id'],
+                customer_email=metadata.get('email'),
+                customer_name=metadata.get('name'),
+                product_name=metadata.get('product_name'),
+                variant_id=metadata.get('variant_id'),
+                size=metadata.get('size'),
+                quantity=qty,
+                cost_pence=int(metadata.get('price', 0)),
+                image_url=metadata.get('image_url'),
+                created_at=session['created']
+            )
+        except Exception as e:
+            app.logger.exception(
+                "Printful order creation failed for session %s: %s",
+                session['id'], e
+            )
+            return jsonify({'status': 'printful_error', 'error': str(e)}), 500
+
+    return jsonify({'status': 'success'}), 200
 
 @app.route('/<path:filename>')
 def serve_static(filename):
@@ -499,78 +574,7 @@ def submit_order_full():
             'traceback': tb
         }), 500
 
-# Stripe Webhook
 
-@app.route('/stripe/webhook', methods=['POST'])
-def stripe_webhook():
-    payload, sig = request.data, request.headers.get('Stripe-Signature')
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig, os.getenv('STRIPE_WEBHOOK_SECRET')
-        )
-    except Exception:
-        return jsonify({'error': 'Invalid webhook'}), 400
-
-    # Handle the checkout.session.completed event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        # 1) Pull out your metadata
-        metadata       = session.get('metadata', {})
-        customer_name  = metadata.get('name')
-        customer_email = metadata.get('email')
-        product_id     = metadata.get('product_id')
-        variant_id     = metadata.get('variant_id')
-        size           = metadata.get('size')
-        qty            = int(metadata.get('quantity', 1))
-
-        # 2) Transfer funds to your connected Stripe account
-        payment_intent_id = session.get('payment_intent')
-        if payment_intent_id:
-            try:
-                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-
-                transfer = stripe.Transfer.create(
-                    amount=payment_intent.amount_received,
-                    currency=payment_intent.currency,
-                    destination=os.environ['DESTINATION_STRIPE_LINKED_ACCT'],
-                    transfer_group=payment_intent.id,
-                )
-            except Exception as e:
-                print(f"Transfer creation failed: {e}")
-                # continue on to Printful
-
-        # 3) Create Printful order
-        try:
-            pf_order = create_printful_order(
-                customer_name,
-                customer_email,
-                metadata.get('address'),
-                metadata.get('city'),
-                variant_id,
-                qty,
-                image_url=metadata.get('image_url')
-            )
-            save_fulfillment(
-                stripe_session_id=session['id'],
-                printful_order_id=pf_order['id'],
-                customer_email=metadata.get('email'),
-                customer_name=metadata.get('name'),
-                product_name=metadata.get('product_name'),
-                variant_id=metadata.get('variant_id'),
-                size=metadata.get('size'),
-                quantity=qty,
-                cost_pence=int(metadata.get('price', 0)),
-                image_url=metadata.get('image_url'),
-                created_at=session['created']
-            )
-        except Exception as e:
-            app.logger.exception(
-                "Printful order creation failed for session %s: %s",
-                session['id'], e
-            )
-            return jsonify({'status': 'printful_error', 'error': str(e)}), 500
-
-    return jsonify({'status': 'success'}), 200
 # Run
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT',5000)), debug=True)
