@@ -153,19 +153,21 @@ def create_printful_order(name, email, address, city, variant_id, qty, image_url
     return data["result"]
 
 
-def save_fulfillment(
-    stripe_session_id,
-    printful_order_id,
-    customer_email,
-    customer_name,
-    product_name,
-    variant_id,
-    size,
-    quantity,
-    cost_pence,
-    image_url,
-    created_at
-):
+def save_fulfillment( stripe_session_id, printful_order_id, customer_email,
+                     customer_name,  product_name,   variant_id,  size,
+                     quantity, cost_pence, image_url, created_at):
+    
+
+    subject = f"Order Confirmation: {product_name} x {quantity}"
+    body = (
+        f"Hi {customer_name},\n\n"
+        f"Thank you for your order! Details:\n"
+        f"- Product: {product_name}\n"
+        f"- Size:    {size}\n"
+        f"- Qty:     {quantity}\n"
+        f"- Total:   £{cost_pence/100:.2f}\n\n"
+        "We’ll notify you when it ships.\n"
+    )
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"]    = "noreply@martinnewbold.co.uk"       # e.g. "orders@yourdomain.com"
