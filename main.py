@@ -153,17 +153,24 @@ def create_printful_order(name, email, address, city, variant_id, qty, image_url
     return data["result"]
 
 
-def send_order_email(
-    to_address,
-    bcc_address,
-    subject,
-    body
+def save_fulfillment(
+    stripe_session_id,
+    printful_order_id,
+    customer_email,
+    customer_name,
+    product_name,
+    variant_id,
+    size,
+    quantity,
+    cost_pence,
+    image_url,
+    created_at
 ):
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"]    = os.getenv("EMAIL_FROM")       # e.g. "orders@yourdomain.com"
+    msg["From"]    = "noreply@martinnewbold.co.uk"       # e.g. "orders@yourdomain.com"
     msg["To"]      = to_address
-    msg["Bcc"]     = bcc_address
+    msg["Bcc"]     = os.getenv('MERCHANT_EMAIL')
     msg.set_content(body)
 
     # Example SMTP – configure your environment accordingly
