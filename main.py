@@ -351,7 +351,9 @@ def submit_order_full():
         # 2) Parse input
         data     = request.json or {}
         qty      = int(data.get('quantity', 1))
-        base_cost = float(data.get('base_cost', 0.0))
+        raw_cost = data.get('cost', None)
+        print("◀️ Raw cost from payload:", raw_cost)
+        base_cost = float(data.get('cost', 0.0))
         product_name = data.get('product_name', '')
         size      = data.get('size', '')
         image_url = data.get('image_url', '')
