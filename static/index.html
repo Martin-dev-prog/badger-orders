@@ -78,6 +78,7 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("🚀 orderForm submit handler fired");
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 7000);  // 7000 ms
 
