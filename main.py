@@ -241,21 +241,19 @@ def stripe_webhook():
         size           = metadata.get('size')
         qty            = int(metadata.get('quantity', 1))
 
-        # 2) Transfer funds to your connected Stripe account
-        payment_intent_id = session.get('payment_intent')
-        if payment_intent_id:
-            try:
-                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-
-                transfer = stripe.Transfer.create(
-                    amount=payment_intent.amount_received,
-                    currency=payment_intent.currency,
-                    destination=os.environ['DESTINATION_STRIPE_LINKED_ACCT'],
-                    transfer_group=payment_intent.id,
-                )
-            except Exception as e:
-                print(f"Transfer creation failed: {e}")
-                # continue on to Printful
+       # Transfer funds to your connected Stripe account
+       # 1) Verify signature...
+        if event['type'] == 'checkout.session.completed':
+           session = event['data']['object']
+           # 2) (Optional) Immediate payout
+           pi = stripe.PaymentIntent.retrieve(session['payment_intent'])
+           stripe.Payout.create(
+              amount=pi.amount_received,
+              currency=pi.currency
+        )
+        # 3) Place Printful order
+        create_printful_order(…)
+           return jsonify({'status': 'success'}), 200
 
         # 3) Create Printful order
         try:
