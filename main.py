@@ -171,7 +171,7 @@ def save_fulfillment( stripe_session_id, printful_order_id, customer_email,
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"]    = "noreply@martinnewbold.co.uk"       # e.g. "orders@yourdomain.com"
-    msg["To"]      = to_address
+    msg["To"]      = customer_email
     msg["Bcc"]     = os.getenv('MERCHANT_EMAIL')
     msg.set_content(body)
 
