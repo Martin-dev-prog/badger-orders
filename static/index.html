@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
       address:        document.getElementById("address").value,
       city:           document.getElementById("city").value,
       product_name:   document.getElementById("productName").innerText,
-      image_url:      imageUrl,
+      image_url:      document.getElementById("productImage").src ,
       size:           sizeSelect.value || "N/A",
       quantity:       Number(quantityInput.value) || 1,
       cost:           basePrice,
