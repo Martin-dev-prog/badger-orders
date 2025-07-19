@@ -21,9 +21,7 @@ from email.message import EmailMessage
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-#Test all routes are registered
-for rule in app.url_map.iter_rules():
-    logging.info(f"Route: {rule.rule}  methods={rule.methods}")
+
 
 # INITIALISE FLASK -—————————————————————————————————
 app = Flask(__name__, instance_relative_config=True)
@@ -50,6 +48,10 @@ app = Flask(
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-default')
 CORS(app)
 logging.basicConfig(level=logging.DEBUG)
+
+#Test all routes are registered
+for rule in app.url_map.iter_rules():
+    logging.info(f"Route: {rule.rule}  methods={rule.methods}")
 
 # ——— Initialize daily_spend database —————————————————————————
 DB_PATH = os.path.join(app.instance_path, 'daily_spend.db')
