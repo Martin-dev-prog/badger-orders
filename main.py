@@ -115,6 +115,40 @@ def check_password():
     if token != ADMIN_PASSWORD:
         abort(403)
 
+def create_printful_order(name, email, address, city, variant_id, qty, image_url=None):
+    """
+    Creates a new order on Printful.
+    Returns the JSON response from Printful on success.
+    Raises if the API call fails.
+    """
+    url = "https://api.printful.com/orders"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('PRINTFUL_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "recipient": {
+            "name":    name,
+            "address1": address,
+            "city":    city,
+            "country_code": "GB",       # adjust as needed
+            "email":   email
+        },
+        "items": [{
+            "variant_id": int(variant_id),
+            "quantity":   int(qty),
+            # override the print file if you want to ensure the correct image:
+            **({"files": [{"url": image_url}]} if image_url else {})
+        }]
+    }
+    resp = requests.post(url, headers=headers, json=payload)
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("code") == 200 and "result" not in data:
+        # Printful returns {"code": 400, "result": {...}} on error
+        raise RuntimeError(f"Printful error: {data}")
+    return data["result"]
+
 # ——— Error Handling —————————————————————————————————
 @app.errorhandler(Exception)
 def handle_exception(e):
