@@ -1,4 +1,17 @@
+July 19, 2025
 
+Subject: Closure of Stripe Account & Data Request
+
+To Whom It May Concern,
+
+As of today, July 19, 2025, I hereby declare my intention to close my Stripe account, effective immediately. I have repeatedly requested—on at least four separate occasions—that Stripe close my account and provide me with all personal data you hold, in accordance with my rights under GDPR Article 15.
+
+These requests follow the fact that Stripe has charged my account for services that were never delivered, and despite my multiple attempts to resolve this, no satisfactory recourse or product has been provided. I regard Stripe’s continued retention of my funds and refusal to honor my data requests as unacceptable and believe these actions may constitute criminal misconduct.
+
+Please process this account closure without further delay and deliver to me, in machine‐readable form, all personal data and transaction records associated with my account. I will be publishing this statement and all relevant correspondence on GitHub to document my experience and inform others of my efforts.
+
+Sincerely,
+Martin Newbold
 
 🦡 Badger Orders – Printful Order API (Flask)
 --------------------------------------------------------------------------
