@@ -387,7 +387,7 @@ def submit_order_full():
                         'name': combined_name,
                         'images': [ image_url ],    # ← images *inside* product_data
                     },
-                    'unit_amount': cost_pence,
+                    'unit_amount': unit_cost_pence ,
                 },
                 'quantity': qty,
             }],
