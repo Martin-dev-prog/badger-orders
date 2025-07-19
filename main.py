@@ -3,7 +3,8 @@
 import os
 import logging
 import sqlite3
-from datetime import date
+import smtplib
+
 
 import stripe
 import requests
@@ -15,6 +16,8 @@ from flask import (
 from flask_cors import CORS
 from functools import wraps
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import date
+from email.message import EmailMessage
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -148,6 +151,31 @@ def create_printful_order(name, email, address, city, variant_id, qty, image_url
         # Printful returns {"code": 400, "result": {...}} on error
         raise RuntimeError(f"Printful error: {data}")
     return data["result"]
+
+
+def send_order_email(
+    to_address,
+    bcc_address,
+    subject,
+    body
+):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"]    = os.getenv("EMAIL_FROM")       # e.g. "orders@yourdomain.com"
+    msg["To"]      = to_address
+    msg["Bcc"]     = bcc_address
+    msg.set_content(body)
+
+    # Example SMTP – configure your environment accordingly
+    smtp_host = os.getenv("SMTP_HOST", "smtp.yourprovider.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 587))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+
+    with smtplib.SMTP(smtp_host, smtp_port) as s:
+        s.starttls()
+        s.login(smtp_user, smtp_pass)
+        s.send_message(msg)
 
 # ——— Error Handling —————————————————————————————————
 @app.errorhandler(Exception)
