@@ -158,6 +158,7 @@ def save_fulfillment( stripe_session_id, printful_order_id, customer_email,
                      quantity, cost_pence, image_url, created_at):
     
 
+  
     subject = f"Order Confirmation: {product_name} x {quantity}"
     body = (
         f"Hi {customer_name},\n\n"
@@ -495,7 +496,7 @@ def submit_order_full():
 # Stripe Webhook
 @app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
-    payload, sig = request.data, request.headers.get('stripe-signature')
+    payload, sig = request.data, request.headers.get('Stripe-signature')
     try:
         event = stripe.Webhook.construct_event(
             payload, sig, os.getenv('STRIPE_WEBHOOK_SECRET')
