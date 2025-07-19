@@ -174,10 +174,10 @@ def save_fulfillment(
     msg.set_content(body)
 
     # Example SMTP – configure your environment accordingly
-    smtp_host = os.getenv("SMTP_HOST", "smtp.yourprovider.com")
-    smtp_port = int(os.getenv("SMTP_PORT", 587))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_USER=os.getenv('MERCHANT_EMAIL')
+    SMTP_PASS=os.getenv('MERCHANT_EMAIL_PSW')
 
     with smtplib.SMTP(smtp_host, smtp_port) as s:
         s.starttls()
