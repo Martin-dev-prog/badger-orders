@@ -518,6 +518,24 @@ def stripe_webhook():
         qty            = int(metadata.get('quantity', 1))
 
         # 2) Create a Printful order
+        payment_intent_id = session.get('payment_intent')
+        if payment_intent_id:
+            try:
+                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+                # Create transfer to connected Revolut account
+                transfer = stripe.Transfer.create(
+                    amount=payment_intent['amount_received'],
+                    currency=payment_intent['currency'],  # fix typo here
+                    destination=os.getenv("DESTINATION_LINKED_ACCT"),  # put your connected acct ID here or env var
+                    transfer_group=payment_intent['id'],
+                )
+            except Exception as e:
+                print(f"Transfer creation failed: {str(e)}")
+                # You can choose to return or continue here
+
+        # Create Printful order (simplified example)
+
         #    (requires you have a function that wraps the Printful API)
         try:
             pf_order = create_printful_order(
