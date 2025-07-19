@@ -496,7 +496,7 @@ def submit_order_full():
 # Stripe Webhook
 @app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
-    payload, sig = request.data, request.headers.get('Stripe-signature')
+    payload, sig = request.data, request.headers.get('Stripe-Signature')
     try:
         event = stripe.Webhook.construct_event(
             payload, sig, os.getenv('STRIPE_WEBHOOK_SECRET')
