@@ -383,8 +383,10 @@ def submit_order_full():
             line_items=[{
                 'price_data': {
                     'currency': 'gbp',
-                    'product_data': {'name': combined_name},
-                    'images':     [ image_url ],
+                    'product_data': {
+                        'name': combined_name,
+                        'images': [ image_url ]    # ← images *inside* product_data
+                    }
                     'unit_amount': cost_pence
                 },
                 'quantity': qty
