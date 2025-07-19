@@ -176,8 +176,9 @@ def save_fulfillment( stripe_session_id, printful_order_id, customer_email,
     msg.set_content(body)
 
     # Example SMTP – configure your environment accordingly
-    SMTP_HOST=smtp.gmail.com
-    SMTP_PORT=587
+    # Read from your environment, with sensible defaults
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 587))
     SMTP_USER=os.getenv('MERCHANT_EMAIL')
     SMTP_PASS=os.getenv('MERCHANT_EMAIL_PSW')
 
