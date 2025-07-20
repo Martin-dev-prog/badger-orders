@@ -1,4 +1,19 @@
-July 19, 2025
+Dear Stripe 
+
+Removal of Bank Details
+On July 18, 2025, at 8:23 PM, I requested that you remove my bank details from your system. To date, this request remains unfulfilled. Please delete all of my banking information from Stripe’s records without further delay.
+
+Account Closure
+As of today, July 19, 2025, I hereby declare my intention to close my Stripe account, effective immediately. Despite having asked on at least four separate occasions for Stripe to close my account, no action has been taken.
+
+GDPR Data Request
+Under Article 15 of the General Data Protection Regulation (GDPR), I request that you provide me with all personal data you hold concerning my account, including transaction histories and any other related information, in a machine‑readable format.
+
+Unjust Charges and Breach of Contract
+You have charged my account for services that were never delivered. My numerous attempts to resolve these discrepancies have met with unsatisfactory responses. Retaining my funds under these circumstances is unacceptable and may constitute criminal misconduct.
+
+Operational Failures
+I was informed that funds could not be released to pay my wholesaler until the transactions were “fully reconciled.” Frankly, this policy is arbitrary. Had this been a genuine emergency affecting real customers, your failure to expedite the process would have left them without goods—an egregious breach of contract.July 19, 2025
 
 Subject: Closure of Stripe Account & Data Request
 
