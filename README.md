@@ -118,7 +118,7 @@ Endpoint	Purpose
 Deployment & Demo
 Ready to deploy on any Python-compatible hosting service such as Render or Replit.
 
-✔ Live demo available at: https://badger-orders.onrender.com/
+✔ Live demo available at: (https://badger-orders.onrender.com/admin/login)
 
 ✔ Support & Contributions
 If you find this project useful as a small-scale commerce solution, please consider supporting my social welfare efforts through my crowdfunding page:
